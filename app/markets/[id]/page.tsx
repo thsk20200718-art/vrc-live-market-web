@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import {
+  DragEvent,
   KeyboardEvent,
   useEffect,
+  useRef,
   useState,
 } from "react";
-
 import {
   useParams,
   useRouter,
@@ -13,63 +15,42 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 
-
 // ============================================================
 // 型
 // ============================================================
 
 type Market = {
   id: string;
-
   market_id: string;
-
   title: string;
-
   seller_display_names: string[];
-
   staff_display_names: string[];
-
   stream_url: string;
-
   status: string;
-
   runtime_slot: number | null;
 };
 
-
 type Product = {
   id: string;
-
   name: string;
-
   price: number;
-
   description: string;
-
   initial_state: string;
-
   sort_order: number;
 };
 
-
-type PublishResponse = {
+type ApiResponse = {
   success?: boolean;
-
-  marketId?: string;
-
-  runtimeSlot?: number;
-
-  productCount?: number;
-
-  imageCount?: number;
-
-  operatorCount?: number;
-
   message?: string;
-
   error?: string;
 };
 
+type DeleteProductResponse =
+  ApiResponse & {
+    productId?: string;
+    productName?: string;
+    deletedImageCount?: number;
+  };
 
 // ============================================================
 // ページ
@@ -77,61 +58,42 @@ type PublishResponse = {
 
 export default function MarketEditPage() {
   const params = useParams();
-
   const router = useRouter();
-
 
   const [supabase] =
     useState(() => createClient());
 
-
   const marketUuid =
     params.id as string;
 
-
   // ==========================================================
-  // データ
+  // 販売会
   // ==========================================================
 
   const [market, setMarket] =
     useState<Market | null>(null);
 
-
-  const [products, setProducts] =
-    useState<Product[]>([]);
-
-
-  // ==========================================================
-  // 販売会入力
-  // ==========================================================
-
   const [title, setTitle] =
     useState("");
-
 
   const [sellerName, setSellerName] =
     useState("");
 
-
-  // ==========================================================
-  // スタッフ
-  // ==========================================================
-
   const [staffNames, setStaffNames] =
     useState<string[]>([]);
-
 
   const [newStaffName, setNewStaffName] =
     useState("");
 
-
-  // ==========================================================
-  // 配信URL
-  // ==========================================================
-
   const [streamUrl, setStreamUrl] =
     useState("");
 
+  // ==========================================================
+  // 商品
+  // ==========================================================
+
+  const [products, setProducts] =
+    useState<Product[]>([]);
 
   // ==========================================================
   // 状態
@@ -140,26 +102,64 @@ export default function MarketEditPage() {
   const [loading, setLoading] =
     useState(true);
 
-
   const [saving, setSaving] =
     useState(false);
-
 
   const [publishing, setPublishing] =
     useState(false);
 
+  const [unpublishing, setUnpublishing] =
+    useState(false);
+
+  const [deletingMarket, setDeletingMarket] =
+    useState(false);
+
+  const [
+    deletingProductId,
+    setDeletingProductId,
+  ] =
+    useState<string | null>(null);
 
   // ==========================================================
-  // 販売会＋商品を読み込む
+  // 商品並び替え
+  // ==========================================================
+
+  const [
+    draggingProductId,
+    setDraggingProductId,
+  ] =
+    useState<string | null>(null);
+
+  const [
+    dragOverProductId,
+    setDragOverProductId,
+  ] =
+    useState<string | null>(null);
+
+  const [
+    reorderingProducts,
+    setReorderingProducts,
+  ] =
+    useState(false);
+
+  const [
+    productOrderChanged,
+    setProductOrderChanged,
+  ] =
+    useState(false);
+
+  const dragProductsRef =
+    useRef<Product[]>([]);
+
+  const dragOriginalProductsRef =
+    useRef<Product[]>([]);
+
+  // ==========================================================
+  // 読み込み
   // ==========================================================
 
   async function loadMarketData() {
     setLoading(true);
-
-
-    // --------------------------------------------------------
-    // 販売会
-    // --------------------------------------------------------
 
     const {
       data: marketData,
@@ -171,35 +171,28 @@ export default function MarketEditPage() {
         .eq("id", marketUuid)
         .single();
 
-
     if (marketError) {
       console.error(
         "Market load error:",
         marketError
       );
 
-
       alert(
         "販売会を読み込めませんでした：" +
           marketError.message
       );
 
-
       setLoading(false);
-
       return;
     }
-
 
     setMarket(
       marketData as Market
     );
 
-
     setTitle(
       marketData.title
     );
-
 
     setSellerName(
       marketData
@@ -207,22 +200,17 @@ export default function MarketEditPage() {
         ""
     );
 
-
     setStaffNames(
-      marketData.staff_display_names ??
+      marketData
+        .staff_display_names ??
         []
     );
 
-
     setStreamUrl(
-      marketData.stream_url ??
+      marketData
+        .stream_url ??
         ""
     );
-
-
-    // --------------------------------------------------------
-    // 商品一覧
-    // --------------------------------------------------------
 
     const {
       data: productData,
@@ -242,35 +230,32 @@ export default function MarketEditPage() {
           }
         );
 
-
     if (productError) {
       console.error(
         "Product load error:",
         productError
       );
 
-
       alert(
         "商品を読み込めませんでした：" +
           productError.message
       );
 
-
       setProducts([]);
     } else {
-      setProducts(
-        productData ?? []
-      );
-    }
+      const loadedProducts =
+        (productData ?? []) as Product[];
 
+      setProducts(
+        loadedProducts
+      );
+
+      dragProductsRef.current =
+        loadedProducts;
+    }
 
     setLoading(false);
   }
-
-
-  // ==========================================================
-  // 初回読み込み
-  // ==========================================================
 
   useEffect(() => {
     loadMarketData();
@@ -278,28 +263,17 @@ export default function MarketEditPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketUuid]);
 
-
   // ==========================================================
-  // スタッフ追加
+  // スタッフ
   // ==========================================================
 
   function handleAddStaff() {
     const trimmedName =
       newStaffName.trim();
 
-
     if (!trimmedName) {
-      alert(
-        "スタッフのVRChat表示名を入力してください。"
-      );
-
       return;
     }
-
-
-    // --------------------------------------------------------
-    // 販売者本人と同じ名前は登録しない
-    // --------------------------------------------------------
 
     if (
       trimmedName.toLowerCase() ===
@@ -314,11 +288,6 @@ export default function MarketEditPage() {
       return;
     }
 
-
-    // --------------------------------------------------------
-    // 重複確認
-    // --------------------------------------------------------
-
     const alreadyExists =
       staffNames.some(
         (staffName) =>
@@ -328,15 +297,9 @@ export default function MarketEditPage() {
           trimmedName.toLowerCase()
       );
 
-
     if (alreadyExists) {
-      alert(
-        "このスタッフはすでに登録されています。"
-      );
-
       return;
     }
-
 
     setStaffNames(
       (current) => [
@@ -345,14 +308,8 @@ export default function MarketEditPage() {
       ]
     );
 
-
     setNewStaffName("");
   }
-
-
-  // ==========================================================
-  // Enterでもスタッフ追加
-  // ==========================================================
 
   function handleStaffKeyDown(
     event: KeyboardEvent<HTMLInputElement>
@@ -361,15 +318,9 @@ export default function MarketEditPage() {
       event.key === "Enter"
     ) {
       event.preventDefault();
-
       handleAddStaff();
     }
   }
-
-
-  // ==========================================================
-  // スタッフ削除
-  // ==========================================================
 
   function handleRemoveStaff(
     index: number
@@ -383,24 +334,20 @@ export default function MarketEditPage() {
     );
   }
 
-
   // ==========================================================
-  // 配信URLの簡易チェック
+  // 配信URL
   // ==========================================================
 
   function isValidStreamUrl(
     value: string
   ) {
-    // 空欄は「配信なし」として許可
     if (!value) {
       return true;
     }
 
-
     try {
       const parsedUrl =
         new URL(value);
-
 
       return (
         parsedUrl.protocol ===
@@ -413,9 +360,8 @@ export default function MarketEditPage() {
     }
   }
 
-
   // ==========================================================
-  // 販売会情報保存
+  // 販売会保存
   // ==========================================================
 
   async function handleSave() {
@@ -423,23 +369,18 @@ export default function MarketEditPage() {
       alert(
         "販売会名を入力してください。"
       );
-
       return;
     }
-
 
     if (!sellerName.trim()) {
       alert(
         "VRChat販売者名を入力してください。"
       );
-
       return;
     }
 
-
     const cleanedStreamUrl =
       streamUrl.trim();
-
 
     if (
       !isValidStreamUrl(
@@ -447,16 +388,10 @@ export default function MarketEditPage() {
       )
     ) {
       alert(
-        "配信URLの形式を確認してください。\n例：https://www.youtube.com/watch?v=..."
+        "配信URLの形式を確認してください。"
       );
-
       return;
     }
-
-
-    // --------------------------------------------------------
-    // スタッフ名整理
-    // --------------------------------------------------------
 
     const cleanedStaffNames =
       staffNames
@@ -469,11 +404,11 @@ export default function MarketEditPage() {
             name.length > 0
         );
 
-
     setSaving(true);
 
-
-    const { error } =
+    const {
+      error,
+    } =
       await supabase
         .from("markets")
         .update({
@@ -499,6 +434,7 @@ export default function MarketEditPage() {
           marketUuid
         );
 
+    setSaving(false);
 
     if (error) {
       console.error(
@@ -506,35 +442,27 @@ export default function MarketEditPage() {
         error
       );
 
-
       alert(
         "保存に失敗しました：" +
           error.message
       );
 
-
-      setSaving(false);
-
       return;
     }
-
 
     setStaffNames(
       cleanedStaffNames
     );
 
-
     setStreamUrl(
       cleanedStreamUrl
     );
-
 
     setMarket(
       (current) => {
         if (!current) {
           return current;
         }
-
 
         return {
           ...current,
@@ -554,60 +482,404 @@ export default function MarketEditPage() {
         };
       }
     );
-
-
-    alert(
-      "販売会情報を保存しました。"
-    );
-
-
-    setSaving(false);
   }
 
+  // ==========================================================
+  // 商品順保存
+  // ==========================================================
+
+  async function saveProductOrder(
+    orderedProducts: Product[]
+  ) {
+    setReorderingProducts(true);
+
+    try {
+      // 一旦10000番台へ退避
+      const temporaryResults =
+        await Promise.all(
+          orderedProducts.map(
+            (product, index) =>
+              supabase
+                .from("products")
+                .update({
+                  sort_order:
+                    10000 + index,
+                })
+                .eq(
+                  "id",
+                  product.id
+                )
+                .eq(
+                  "market_id",
+                  marketUuid
+                )
+          )
+        );
+
+      const temporaryError =
+        temporaryResults.find(
+          (result) =>
+            result.error
+        )?.error;
+
+      if (temporaryError) {
+        throw temporaryError;
+      }
+
+      // 正式な0,1,2...へ
+      const finalResults =
+        await Promise.all(
+          orderedProducts.map(
+            (product, index) =>
+              supabase
+                .from("products")
+                .update({
+                  sort_order:
+                    index,
+                })
+                .eq(
+                  "id",
+                  product.id
+                )
+                .eq(
+                  "market_id",
+                  marketUuid
+                )
+          )
+        );
+
+      const finalError =
+        finalResults.find(
+          (result) =>
+            result.error
+        )?.error;
+
+      if (finalError) {
+        throw finalError;
+      }
+
+      const correctedProducts =
+        orderedProducts.map(
+          (product, index) => ({
+            ...product,
+            sort_order:
+              index,
+          })
+        );
+
+      setProducts(
+        correctedProducts
+      );
+
+      dragProductsRef.current =
+        correctedProducts;
+
+      setProductOrderChanged(true);
+    } catch (error) {
+      console.error(
+        "Product reorder error:",
+        error
+      );
+
+      alert(
+        "商品の並び替えに失敗しました。元の順番に戻します。"
+      );
+
+      setProducts(
+        dragOriginalProductsRef.current
+      );
+
+      dragProductsRef.current =
+        dragOriginalProductsRef.current;
+    } finally {
+      setReorderingProducts(false);
+    }
+  }
 
   // ==========================================================
-  // 販売会公開
+  // スマホ用 ↑ ↓ 並び替え
   // ==========================================================
 
-  async function handlePublish() {
+  async function handleMoveProduct(
+    productId: string,
+    direction:
+      | "up"
+      | "down"
+  ) {
+    if (
+      reorderingProducts
+    ) {
+      return;
+    }
+
+    const currentIndex =
+      products.findIndex(
+        (product) =>
+          product.id ===
+          productId
+      );
+
+    if (
+      currentIndex < 0
+    ) {
+      return;
+    }
+
+    const targetIndex =
+      direction === "up"
+        ? currentIndex - 1
+        : currentIndex + 1;
+
+    if (
+      targetIndex < 0 ||
+      targetIndex >=
+        products.length
+    ) {
+      return;
+    }
+
+    const originalProducts =
+      [...products];
+
+    const reorderedProducts =
+      [...products];
+
+    const [movedProduct] =
+      reorderedProducts.splice(
+        currentIndex,
+        1
+      );
+
+    reorderedProducts.splice(
+      targetIndex,
+      0,
+      movedProduct
+    );
+
+    dragOriginalProductsRef.current =
+      originalProducts;
+
+    dragProductsRef.current =
+      reorderedProducts;
+
+    // 画面では即反映
+    setProducts(
+      reorderedProducts
+    );
+
+    await saveProductOrder(
+      reorderedProducts
+    );
+  }
+
+  // ==========================================================
+  // PC Drag & Drop
+  // ==========================================================
+
+  function handleDragStart(
+    event: DragEvent<HTMLDivElement>,
+    productId: string
+  ) {
+    if (
+      reorderingProducts
+    ) {
+      event.preventDefault();
+      return;
+    }
+
+    const currentProducts =
+      [...products];
+
+    dragOriginalProductsRef.current =
+      currentProducts;
+
+    dragProductsRef.current =
+      currentProducts;
+
+    setDraggingProductId(
+      productId
+    );
+
+    setDragOverProductId(
+      null
+    );
+
+    event.dataTransfer.effectAllowed =
+      "move";
+
+    event.dataTransfer.setData(
+      "text/plain",
+      productId
+    );
+  }
+
+  function handleDragOver(
+    event: DragEvent<HTMLDivElement>
+  ) {
+    event.preventDefault();
+
+    event.dataTransfer.dropEffect =
+      "move";
+  }
+
+  function handleDragEnter(
+    targetProductId: string
+  ) {
+    if (
+      !draggingProductId
+    ) {
+      return;
+    }
+
+    if (
+      draggingProductId ===
+      targetProductId
+    ) {
+      return;
+    }
+
+    const currentProducts =
+      [
+        ...dragProductsRef.current,
+      ];
+
+    const sourceIndex =
+      currentProducts.findIndex(
+        (product) =>
+          product.id ===
+          draggingProductId
+      );
+
+    const targetIndex =
+      currentProducts.findIndex(
+        (product) =>
+          product.id ===
+          targetProductId
+      );
+
+    if (
+      sourceIndex < 0 ||
+      targetIndex < 0 ||
+      sourceIndex ===
+        targetIndex
+    ) {
+      return;
+    }
+
+    const [movedProduct] =
+      currentProducts.splice(
+        sourceIndex,
+        1
+      );
+
+    currentProducts.splice(
+      targetIndex,
+      0,
+      movedProduct
+    );
+
+    dragProductsRef.current =
+      currentProducts;
+
+    setProducts(
+      currentProducts
+    );
+
+    setDragOverProductId(
+      targetProductId
+    );
+  }
+
+  function handleDrop(
+    event: DragEvent<HTMLDivElement>
+  ) {
+    event.preventDefault();
+
+    setDragOverProductId(
+      null
+    );
+  }
+
+  async function handleDragEnd() {
+    if (
+      !draggingProductId
+    ) {
+      return;
+    }
+
+    const finalProducts =
+      [
+        ...dragProductsRef.current,
+      ];
+
+    const originalProducts =
+      [
+        ...dragOriginalProductsRef.current,
+      ];
+
+    setDraggingProductId(
+      null
+    );
+
+    setDragOverProductId(
+      null
+    );
+
+    const changed =
+      finalProducts.some(
+        (product, index) =>
+          product.id !==
+          originalProducts[
+            index
+          ]?.id
+      );
+
+    if (!changed) {
+      return;
+    }
+
+    await saveProductOrder(
+      finalProducts
+    );
+  }
+
+  // ==========================================================
+  // 商品削除
+  // ==========================================================
+
+  async function handleDeleteProduct(
+    product: Product
+  ) {
     if (!market) {
       return;
     }
 
-
     if (
-      products.length === 0
+      market.status ===
+      "published"
     ) {
       alert(
-        "商品が1件もありません。商品を追加してから公開してください。"
+        "公開中の商品は削除できません。\n先に販売会の公開を解除してください。"
       );
 
       return;
     }
 
-
+    // 商品削除は確認1回だけ
     const confirmed =
       window.confirm(
-        market.status ===
-          "published"
-          ? "販売会を再公開しますか？\n現在の公開内容が最新の内容に更新されます。"
-          : "この販売会を公開しますか？\n公開後、VRChatから読み込めるようになります。"
+        `「${product.name}」を削除しますか？\n商品写真もすべて削除されます。`
       );
-
 
     if (!confirmed) {
       return;
     }
 
-
-    setPublishing(true);
-
+    setDeletingProductId(
+      product.id
+    );
 
     try {
-      // ------------------------------------------------------
-      // ログインSession
-      // ------------------------------------------------------
-
       const {
         data: sessionData,
         error: sessionError,
@@ -615,30 +887,154 @@ export default function MarketEditPage() {
         await supabase.auth
           .getSession();
 
+      if (
+        sessionError ||
+        !sessionData.session
+      ) {
+        alert(
+          "ログイン情報を確認できませんでした。"
+        );
+        return;
+      }
+
+      const response =
+        await fetch(
+          `/api/markets/${marketUuid}/products/${product.id}/delete`,
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${sessionData.session.access_token}`,
+            },
+          }
+        );
+
+      const contentType =
+        response.headers.get(
+          "content-type"
+        ) ?? "";
+
+      if (
+        !contentType.includes(
+          "application/json"
+        )
+      ) {
+        console.error(
+          await response.text()
+        );
+
+        alert(
+          "商品削除APIから正しい応答を受け取れませんでした。"
+        );
+
+        return;
+      }
+
+      const result =
+        (
+          await response.json()
+        ) as DeleteProductResponse;
+
+      if (!response.ok) {
+        alert(
+          result.error ??
+            "商品の削除に失敗しました。"
+        );
+
+        return;
+      }
+
+      // 成功Alertは出さない
+      const remainingProducts =
+        products
+          .filter(
+            (item) =>
+              item.id !==
+              product.id
+          )
+          .map(
+            (item, index) => ({
+              ...item,
+              sort_order:
+                index,
+            })
+          );
+
+      setProducts(
+        remainingProducts
+      );
+
+      dragProductsRef.current =
+        remainingProducts;
+    } catch (error) {
+      console.error(
+        "Delete product error:",
+        error
+      );
+
+      alert(
+        "商品の削除中に通信エラーが発生しました。"
+      );
+    } finally {
+      setDeletingProductId(
+        null
+      );
+    }
+  }
+
+  // ==========================================================
+  // 公開
+  // ==========================================================
+
+  async function handlePublish() {
+    if (!market) {
+      return;
+    }
+
+    if (
+      products.length ===
+      0
+    ) {
+      alert(
+        "商品が1件もありません。"
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        market.status ===
+          "published"
+          ? "販売会を再公開しますか？"
+          : "販売会を公開しますか？"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setPublishing(true);
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } =
+        await supabase.auth
+          .getSession();
 
       if (
         sessionError ||
         !sessionData.session
       ) {
         alert(
-          "ログイン情報を取得できませんでした。もう一度ログインしてください。"
+          "ログイン情報を確認できませんでした。"
         );
-
-
-        setPublishing(false);
 
         return;
       }
-
-
-      const accessToken =
-        sessionData.session
-          .access_token;
-
-
-      // ------------------------------------------------------
-      // 公開API
-      // ------------------------------------------------------
 
       const response =
         await fetch(
@@ -649,81 +1045,35 @@ export default function MarketEditPage() {
 
             headers: {
               Authorization:
-                `Bearer ${accessToken}`,
+                `Bearer ${sessionData.session.access_token}`,
             },
           }
         );
 
-
       const result =
-        (await response.json()) as PublishResponse;
-
-
-      // ------------------------------------------------------
-      // 失敗
-      // ------------------------------------------------------
+        (
+          await response.json()
+        ) as ApiResponse;
 
       if (!response.ok) {
         alert(
-          "公開に失敗しました：\n" +
-            (
-              result.error ??
-              "不明なエラーが発生しました。"
-            )
+          result.error ??
+            "公開に失敗しました。"
         );
-
 
         return;
       }
 
-
-      // ------------------------------------------------------
-      // 成功
-      // ------------------------------------------------------
-
-      alert(
-        [
-          result.message ??
-            "販売会を公開しました。",
-
-          "",
-
-          `Market ID：${
-            result.marketId ??
-            market.market_id
-          }`,
-
-          `Runtime Slot：${
-            result.runtimeSlot ??
-            "-"
-          }`,
-
-          `商品数：${
-            result.productCount ??
-            products.length
-          }`,
-
-          `画像数：${
-            result.imageCount ??
-            "-"
-          }`,
-
-          `操作権限人数：${
-            result.operatorCount ??
-            "-"
-          }`,
-        ].join("\n")
+      setProductOrderChanged(
+        false
       );
-
 
       await loadMarketData();
-
     } catch (error) {
       console.error(
-        "Publish request error:",
+        "Publish error:",
         error
       );
-
 
       alert(
         "公開処理中に通信エラーが発生しました。"
@@ -733,269 +1083,405 @@ export default function MarketEditPage() {
     }
   }
 
+  // ==========================================================
+  // 公開解除
+  // ==========================================================
+
+  async function handleUnpublish() {
+    const confirmed =
+      window.confirm(
+        "販売会の公開を解除しますか？\n商品や設定は削除されません。"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setUnpublishing(true);
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } =
+        await supabase.auth
+          .getSession();
+
+      if (
+        sessionError ||
+        !sessionData.session
+      ) {
+        alert(
+          "ログイン情報を確認できませんでした。"
+        );
+
+        return;
+      }
+
+      const response =
+        await fetch(
+          `/api/markets/${marketUuid}/unpublish`,
+          {
+            method:
+              "POST",
+
+            headers: {
+              Authorization:
+                `Bearer ${sessionData.session.access_token}`,
+            },
+          }
+        );
+
+      const result =
+        (
+          await response.json()
+        ) as ApiResponse;
+
+      if (!response.ok) {
+        alert(
+          result.error ??
+            "公開解除に失敗しました。"
+        );
+
+        return;
+      }
+
+      setProductOrderChanged(
+        false
+      );
+
+      await loadMarketData();
+    } catch (error) {
+      console.error(
+        "Unpublish error:",
+        error
+      );
+
+      alert(
+        "公開解除中に通信エラーが発生しました。"
+      );
+    } finally {
+      setUnpublishing(false);
+    }
+  }
 
   // ==========================================================
-  // 読み込み中
+  // 販売会削除
+  // ==========================================================
+
+  async function handleDeleteMarket() {
+    if (!market) {
+      return;
+    }
+
+    // 販売会削除は確認2回
+    const firstConfirmed =
+      window.confirm(
+        [
+          "この販売会を削除しますか？",
+          "",
+          `販売会：${market.title}`,
+          "",
+          "商品・商品写真もすべて削除されます。",
+        ].join("\n")
+      );
+
+    if (!firstConfirmed) {
+      return;
+    }
+
+    const secondConfirmed =
+      window.confirm(
+        [
+          "最終確認です。",
+          "",
+          "本当に販売会を削除しますか？",
+          "",
+          "この操作は元に戻せません。",
+        ].join("\n")
+      );
+
+    if (!secondConfirmed) {
+      return;
+    }
+
+    setDeletingMarket(true);
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError,
+      } =
+        await supabase.auth
+          .getSession();
+
+      if (
+        sessionError ||
+        !sessionData.session
+      ) {
+        alert(
+          "ログイン情報を確認できませんでした。"
+        );
+
+        return;
+      }
+
+      const response =
+        await fetch(
+          `/api/markets/${marketUuid}/delete`,
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${sessionData.session.access_token}`,
+            },
+          }
+        );
+
+      const result =
+        (
+          await response.json()
+        ) as ApiResponse;
+
+      if (!response.ok) {
+        alert(
+          result.error ??
+            "販売会の削除に失敗しました。"
+        );
+
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error(
+        "Delete market error:",
+        error
+      );
+
+      alert(
+        "販売会削除中に通信エラーが発生しました。"
+      );
+    } finally {
+      setDeletingMarket(false);
+    }
+  }
+
+  // ==========================================================
+  // Loading
   // ==========================================================
 
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
-
-        <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
           読み込み中...
         </div>
-
       </main>
     );
   }
-
-
-  // ==========================================================
-  // 販売会なし
-  // ==========================================================
 
   if (!market) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
-
-        <div className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
           販売会が見つかりません。
         </div>
-
       </main>
     );
   }
 
+  const processing =
+    saving ||
+    publishing ||
+    unpublishing ||
+    deletingMarket ||
+    deletingProductId !==
+      null;
 
   // ==========================================================
-  // 画面
+  // UI
   // ==========================================================
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
 
-        {/* ====================================================
-            戻る
-        ==================================================== */}
+        {/* 戻る */}
 
         <button
+          type="button"
           onClick={() =>
             router.push("/")
           }
-          className="mb-8 text-sm text-slate-400 transition hover:text-white"
+          disabled={
+            processing
+          }
+          className="mb-6 min-h-11 text-sm text-slate-400 transition hover:text-white disabled:opacity-40 sm:mb-8"
         >
           ← 販売会一覧へ戻る
         </button>
 
+        {/* Header */}
 
-        {/* ====================================================
-            タイトル
-        ==================================================== */}
+        <div className="mb-8 sm:mb-10">
 
-        <div className="mb-10">
-
-          <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
+          <p className="text-xs font-semibold tracking-[0.2em] text-emerald-400 sm:text-sm sm:tracking-[0.25em]">
             VRC LIVE MARKET
           </p>
 
-
-          <h1 className="mt-3 text-4xl font-bold">
+          <h1 className="mt-3 text-2xl font-bold sm:text-4xl">
             販売会を編集
           </h1>
 
+          <p className="mt-2 text-sm text-slate-400 sm:mt-3 sm:text-base">
+            販売会の設定と商品を管理します。
+          </p>
+
         </div>
 
+        {/* ==================================================
+            販売会設定
+        ================================================== */}
 
-        {/* ====================================================
-            上部
-        ==================================================== */}
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px] lg:gap-8">
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-
-
-          {/* ==================================================
-              左：設定
-          ================================================== */}
-
-          <section className="space-y-7 rounded-2xl border border-slate-800 bg-slate-900 p-8">
-
+          <section className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:space-y-7 sm:p-8">
 
             {/* 販売会名 */}
-            <div>
 
+            <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">
                 販売会名
               </label>
 
-
               <input
+                type="text"
                 value={title}
-
+                disabled={
+                  processing
+                }
                 onChange={(e) =>
                   setTitle(
                     e.target.value
                   )
                 }
-
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
+                className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none transition focus:border-emerald-500 disabled:opacity-50"
               />
-
             </div>
 
-
-            {/* ================================================
-                販売者
-            ================================================ */}
+            {/* 販売者 */}
 
             <div>
-
               <label className="mb-2 block text-sm font-medium text-slate-300">
                 VRChat販売者名
               </label>
 
-
               <input
+                type="text"
                 value={
                   sellerName
                 }
-
+                disabled={
+                  processing
+                }
                 onChange={(e) =>
                   setSellerName(
                     e.target.value
                   )
                 }
-
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
+                className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none transition focus:border-emerald-500 disabled:opacity-50"
               />
-
-
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                販売会を主催する人のVRChat Display Nameです。
-              </p>
-
             </div>
 
+            {/* スタッフ */}
 
-            {/* ================================================
+            <div className="border-t border-slate-800 pt-6">
+
+              <h2 className="text-lg font-bold">
                 スタッフ
-            ================================================ */}
+              </h2>
 
-            <div className="border-t border-slate-800 pt-7">
-
-              <div className="mb-4">
-
-                <h2 className="text-lg font-bold">
-                  スタッフ
-                </h2>
-
-
-                <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                  販売を手伝うスタッフのVRChat Display Nameを登録します。
-                </p>
-
-
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                  登録されたスタッフも、VRChat内で販売者用パネルを操作できます。
-                </p>
-
-              </div>
-
+              <p className="mt-1 text-sm text-slate-400">
+                VRChat内で販売操作を行えるスタッフを登録します。
+              </p>
 
               {staffNames.length === 0 ? (
-
-                <div className="mb-4 rounded-xl border border-dashed border-slate-700 px-4 py-5 text-center text-sm text-slate-500">
+                <div className="mt-4 rounded-xl border border-dashed border-slate-700 p-4 text-center text-sm text-slate-500">
                   スタッフはまだ登録されていません。
                 </div>
-
               ) : (
-
-                <div className="mb-4 space-y-2">
+                <div className="mt-4 space-y-2">
 
                   {staffNames.map(
                     (
                       staffName,
                       index
                     ) => (
-
                       <div
                         key={`${staffName}-${index}`}
                         className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 p-3"
                       >
-
-                        <div className="min-w-0 flex-1">
-
-                          <p className="truncate font-medium">
-                            {staffName}
-                          </p>
-
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            スタッフ
-                          </p>
-
-                        </div>
-
+                        <p className="min-w-0 flex-1 truncate">
+                          {staffName}
+                        </p>
 
                         <button
                           type="button"
-
+                          disabled={
+                            processing
+                          }
                           onClick={() =>
                             handleRemoveStaff(
                               index
                             )
                           }
-
-                          className="rounded-lg border border-red-900 px-3 py-2 text-sm text-red-400 transition hover:bg-red-950"
+                          className="min-h-11 rounded-lg px-3 text-sm text-red-400 transition hover:bg-red-950 disabled:opacity-40"
                         >
                           削除
                         </button>
-
                       </div>
-
                     )
                   )}
 
                 </div>
-
               )}
 
-
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
 
                 <input
                   type="text"
-
                   value={
                     newStaffName
                   }
-
+                  disabled={
+                    processing
+                  }
                   onChange={(e) =>
                     setNewStaffName(
                       e.target.value
                     )
                   }
-
                   onKeyDown={
                     handleStaffKeyDown
                   }
-
-                  placeholder="VRChat表示名を入力"
-
-                  className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
+                  placeholder="VRChat表示名"
+                  className="min-h-12 min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none focus:border-emerald-500 disabled:opacity-50"
                 />
-
 
                 <button
                   type="button"
-
+                  disabled={
+                    processing
+                  }
                   onClick={
                     handleAddStaff
                   }
-
-                  className="shrink-0 rounded-xl border border-emerald-700 px-5 py-3 font-semibold text-emerald-400 transition hover:bg-emerald-950"
+                  className="min-h-12 rounded-xl border border-emerald-700 px-5 py-3 font-semibold text-emerald-400 transition hover:bg-emerald-950 disabled:opacity-40"
                 >
                   ＋ 追加
                 </button>
@@ -1004,134 +1490,79 @@ export default function MarketEditPage() {
 
             </div>
 
+            {/* 配信 */}
 
-            {/* ================================================
+            <div className="border-t border-slate-800 pt-6">
+
+              <h2 className="text-lg font-bold">
                 ライブ配信
-            ================================================ */}
-
-            <div className="border-t border-slate-800 pt-7">
-
-              <div className="mb-4">
-
-                <h2 className="text-lg font-bold">
-                  ライブ配信
-                </h2>
-
-
-                <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                  VRChatワールドに入ったときに自動再生する配信URLを設定します。
-                </p>
-
-              </div>
-
-
-              <label className="mb-2 block text-sm font-medium text-slate-300">
-                配信URL
-              </label>
-
+              </h2>
 
               <input
                 type="url"
-
                 value={
                   streamUrl
                 }
-
+                disabled={
+                  processing
+                }
                 onChange={(e) =>
                   setStreamUrl(
                     e.target.value
                   )
                 }
-
                 placeholder="https://www.youtube.com/watch?v=..."
-
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="mt-4 min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none focus:border-blue-500 disabled:opacity-50"
               />
-
-
-              <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
-
-                <p className="text-sm font-medium text-slate-300">
-                  対応予定
-                </p>
-
-
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  YouTube Live / Twitch など、VRChatのAVPro Video Playerで再生できるURLを設定できます。
-                </p>
-
-              </div>
-
-
-              <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                空欄にすると自動再生しません。VRChat内で販売者・スタッフが一時的に別URLへ変更することもできるようにします。その変更はWebには保存されません。
-              </p>
 
             </div>
 
-
-            {/* ================================================
-                保存
-            ================================================ */}
+            {/* 保存 */}
 
             <button
+              type="button"
               onClick={
                 handleSave
               }
-
               disabled={
-                saving
+                processing
               }
-
-              className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-12 w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-
               {saving
                 ? "保存中..."
                 : "変更を保存"}
-
             </button>
 
           </section>
 
-
           {/* ==================================================
-              右：公開情報
+              公開設定
           ================================================== */}
 
-          <aside className="h-fit space-y-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <aside className="h-fit space-y-5 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:space-y-6 sm:p-6">
 
-
-            {/* Market ID */}
             <div>
-
               <p className="text-sm text-slate-400">
                 Market ID
               </p>
 
-
-              <p className="mt-1 font-mono text-xl font-bold text-emerald-400">
+              <p className="mt-1 break-all font-mono text-base font-bold text-emerald-400 sm:text-lg">
                 {market.market_id}
               </p>
-
             </div>
-
 
             <div className="border-t border-slate-800" />
 
-
-            {/* 公開状態 */}
             <div>
-
               <p className="text-sm text-slate-400">
                 公開状態
               </p>
 
-
               <div className="mt-2 flex items-center gap-2">
 
                 <span
-                  className={`inline-block h-2.5 w-2.5 rounded-full ${
+                  className={`h-2.5 w-2.5 rounded-full ${
                     market.status ===
                     "published"
                       ? "bg-emerald-400"
@@ -1139,34 +1570,24 @@ export default function MarketEditPage() {
                   }`}
                 />
 
-
                 <p className="font-semibold">
-
                   {market.status ===
                   "published"
                     ? "公開中"
                     : "下書き"}
-
                 </p>
 
               </div>
-
             </div>
 
-
-            {/* Runtime Slot */}
-            {market.runtime_slot !==
-              null && (
+            {market.runtime_slot !== null && (
               <>
                 <div className="border-t border-slate-800" />
 
-
                 <div>
-
                   <p className="text-sm text-slate-400">
                     Runtime Slot
                   </p>
-
 
                   <p className="mt-1 font-mono font-semibold">
                     {String(
@@ -1176,243 +1597,367 @@ export default function MarketEditPage() {
                       "0"
                     )}
                   </p>
-
                 </div>
               </>
             )}
 
-
             <div className="border-t border-slate-800" />
 
-
-            {/* 権限概要 */}
-            <div>
-
-              <p className="text-sm text-slate-400">
-                VRChat操作権限
-              </p>
-
-
-              <p className="mt-2 text-sm">
-                販売者 1名
-              </p>
-
-
-              <p className="mt-1 text-sm">
-                スタッフ{" "}
-                {staffNames.length}名
-              </p>
-
-            </div>
-
-
-            <div className="border-t border-slate-800" />
-
-
-            {/* 配信設定概要 */}
-            <div>
-
-              <p className="text-sm text-slate-400">
-                ライブ配信
-              </p>
-
-
-              {streamUrl.trim() ? (
-
-                <>
-                  <p className="mt-2 font-semibold text-blue-400">
-                    URL設定あり
-                  </p>
-
-
-                  <p className="mt-2 break-all text-xs leading-relaxed text-slate-500">
-                    {streamUrl}
-                  </p>
-                </>
-
-              ) : (
-
-                <p className="mt-2 text-sm text-slate-500">
-                  配信URL未設定
-                </p>
-
-              )}
-
-            </div>
-
-
-            <div className="border-t border-slate-800" />
-
-
-            <p className="text-sm leading-relaxed text-slate-400">
-
-              {market.status ===
-              "published"
-                ? "変更した商品・スタッフ・配信設定をVRChatへ反映するには、保存後に再公開してください。"
-                : "準備が完了したらVRChat向けに公開できます。"}
-
-            </p>
-
-
-            {/* 公開ボタン */}
             <button
+              type="button"
               onClick={
                 handlePublish
               }
-
               disabled={
-                publishing ||
-                products.length === 0
+                processing ||
+                products.length === 0 ||
+                reorderingProducts
               }
-
-              className="w-full rounded-xl bg-blue-500 px-5 py-3 font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="min-h-12 w-full rounded-xl bg-blue-500 px-5 py-3 font-bold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
-
               {publishing
                 ? "公開処理中..."
                 : market.status ===
                     "published"
                   ? "↻ 再公開する"
                   : "🚀 販売会を公開"}
-
             </button>
 
-
-            {products.length ===
-              0 && (
-              <p className="text-center text-xs text-slate-500">
-                商品を1件以上追加すると公開できます。
-              </p>
+            {market.status ===
+              "published" && (
+              <button
+                type="button"
+                onClick={
+                  handleUnpublish
+                }
+                disabled={
+                  processing ||
+                  reorderingProducts
+                }
+                className="min-h-12 w-full rounded-xl border border-amber-700 bg-amber-950/30 px-5 py-3 font-bold text-amber-300 transition hover:bg-amber-950 disabled:opacity-40"
+              >
+                公開を解除する
+              </button>
             )}
 
           </aside>
 
         </div>
 
-
-        {/* ====================================================
+        {/* ==================================================
             商品
-        ==================================================== */}
+        ================================================== */}
 
-        <section className="mt-10">
+        <section className="mt-10 sm:mt-12">
 
-          <div className="mb-5 flex items-center justify-between gap-6">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
-
               <h2 className="text-2xl font-bold">
                 商品
               </h2>
 
-
               <p className="mt-1 text-sm text-slate-400">
-                この販売会で紹介する商品を管理します。
+                商品の並び替え・編集・削除ができます。
               </p>
 
+              {/* PC */}
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block">
+                ⋮⋮ をドラッグして表示順を変更できます。
+              </p>
+
+              {/* スマホ */}
+              <p className="mt-1 text-xs text-slate-500 sm:hidden">
+                ↑ ↓ ボタンで表示順を変更できます。
+              </p>
             </div>
 
-
-            <button
-              onClick={() =>
-                router.push(
-                  `/markets/${marketUuid}/products/new`
-                )
-              }
-
-              className="shrink-0 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
+            <Link
+              href={`/markets/${marketUuid}/products/new`}
+              className="flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 sm:w-auto"
             >
               ＋ 商品を追加
-            </button>
+            </Link>
 
           </div>
 
+          {/* 並び替え保存中 */}
+
+          {reorderingProducts && (
+            <div className="mb-4 rounded-xl border border-blue-800 bg-blue-950/30 p-3 text-sm text-blue-300">
+              並び替えを保存中...
+            </div>
+          )}
+
+          {/* 並び順変更後 */}
+
+          {productOrderChanged && (
+            <div className="mb-5 rounded-xl border border-amber-800 bg-amber-950/30 p-4">
+              <p className="text-sm font-medium text-amber-300">
+
+                {market.status ===
+                "published"
+                  ? "商品順を変更しました。VRChatへ反映するには「再公開する」を押してください。"
+                  : "商品順を変更しました。次回公開するとこの順番が反映されます。"}
+
+              </p>
+            </div>
+          )}
+
+          {/* 商品なし */}
 
           {products.length === 0 ? (
-
-            <div className="rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-slate-500 sm:p-10">
               まだ商品がありません。
             </div>
-
           ) : (
-
             <div className="space-y-4">
 
               {products.map(
                 (
                   product,
                   index
-                ) => (
+                ) => {
+                  const isDragging =
+                    draggingProductId ===
+                    product.id;
 
-                  <div
-                    key={
-                      product.id
-                    }
+                  const isDragOver =
+                    dragOverProductId ===
+                    product.id;
 
-                    className="flex items-center justify-between gap-6 rounded-2xl border border-slate-800 bg-slate-900 p-6"
-                  >
+                  const isDeleting =
+                    deletingProductId ===
+                    product.id;
 
-                    <div>
+                  return (
+                    <div
+                      key={
+                        product.id
+                      }
 
-                      <p className="text-sm text-slate-500">
-                        No.
-                        {String(
-                          index + 1
-                        ).padStart(
-                          2,
-                          "0"
-                        )}
-                      </p>
+                      onDragOver={
+                        handleDragOver
+                      }
 
+                      onDragEnter={() =>
+                        handleDragEnter(
+                          product.id
+                        )
+                      }
 
-                      <h3 className="mt-1 text-xl font-bold">
-                        {product.name}
-                      </h3>
+                      onDrop={
+                        handleDrop
+                      }
 
+                      className={`rounded-2xl border bg-slate-900 p-4 transition sm:p-6 ${
+                        isDragOver
+                          ? "border-emerald-400"
+                          : "border-slate-800"
+                      } ${
+                        isDragging
+                          ? "opacity-50"
+                          : ""
+                      }`}
+                    >
 
-                      <p className="mt-2 text-lg font-semibold text-emerald-400">
-                        ¥
-                        {product.price.toLocaleString()}
-                      </p>
+                      {/* ==================================================
+                          PC用ドラッグ
+                      ================================================== */}
 
+                      <div
+                        draggable={
+                          !reorderingProducts
+                        }
 
-                      {product.description && (
-                        <p className="mt-2 text-sm text-slate-400">
-                          {product.description}
-                        </p>
-                      )}
-
-                    </div>
-
-
-                    <div className="flex flex-col items-end gap-3">
-
-                      <span className="rounded-full border border-slate-700 px-3 py-1 text-sm">
-                        {product.initial_state}
-                      </span>
-
-
-                      <button
-                        onClick={() =>
-                          router.push(
-                            `/markets/${marketUuid}/products/${product.id}`
+                        onDragStart={(event) =>
+                          handleDragStart(
+                            event,
+                            product.id
                           )
                         }
 
-                        className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium transition hover:bg-slate-800"
+                        onDragEnd={
+                          handleDragEnd
+                        }
+
+                        className={`mb-4 hidden select-none rounded-lg border border-dashed px-4 py-2 text-center text-sm transition sm:block ${
+                          reorderingProducts
+                            ? "cursor-wait border-slate-800 text-slate-700"
+                            : "cursor-grab border-slate-700 text-slate-500 hover:border-emerald-600 hover:text-emerald-400 active:cursor-grabbing"
+                        }`}
                       >
-                        編集
-                      </button>
+                        ⋮⋮ ドラッグして並び替え
+                      </div>
+
+                      {/* ==================================================
+                          スマホ用 ↑ ↓
+                      ================================================== */}
+
+                      <div className="mb-4 grid grid-cols-2 gap-2 sm:hidden">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleMoveProduct(
+                              product.id,
+                              "up"
+                            )
+                          }
+                          disabled={
+                            index === 0 ||
+                            reorderingProducts ||
+                            processing
+                          }
+                          className="min-h-12 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 font-semibold text-slate-200 transition active:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          ↑ 上へ
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleMoveProduct(
+                              product.id,
+                              "down"
+                            )
+                          }
+                          disabled={
+                            index ===
+                              products.length - 1 ||
+                            reorderingProducts ||
+                            processing
+                          }
+                          className="min-h-12 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 font-semibold text-slate-200 transition active:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          ↓ 下へ
+                        </button>
+
+                      </div>
+
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                        {/* 商品情報 */}
+
+                        <div className="min-w-0 flex-1">
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 sm:block">
+
+                            <p className="text-sm text-slate-500">
+                              No.
+                              {String(
+                                index + 1
+                              ).padStart(
+                                2,
+                                "0"
+                              )}
+                            </p>
+
+                            <span className="rounded-full border border-slate-700 px-3 py-1 text-xs sm:hidden">
+                              {product.initial_state}
+                            </span>
+
+                          </div>
+
+                          <h3 className="mt-2 break-words text-lg font-bold sm:mt-1 sm:text-xl">
+                            {product.name}
+                          </h3>
+
+                          <p className="mt-2 text-lg font-semibold text-emerald-400">
+                            ¥
+                            {product.price.toLocaleString()}
+                          </p>
+
+                          {product.description && (
+                            <p className="mt-2 break-words text-sm leading-relaxed text-slate-400">
+                              {product.description}
+                            </p>
+                          )}
+
+                        </div>
+
+                        {/* 操作 */}
+
+                        <div className="w-full space-y-3 sm:w-52">
+
+                          <div className="hidden justify-end sm:flex">
+                            <span className="rounded-full border border-slate-700 px-3 py-1 text-sm">
+                              {product.initial_state}
+                            </span>
+                          </div>
+
+                          <Link
+                            href={`/markets/${marketUuid}/products/${product.id}`}
+                            className="flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-700 px-4 py-3 font-medium transition hover:bg-slate-800 active:bg-slate-800"
+                          >
+                            編集
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteProduct(
+                                product
+                              )
+                            }
+                            disabled={
+                              isDeleting ||
+                              reorderingProducts
+                            }
+                            className="min-h-12 w-full rounded-xl border border-red-900 px-4 py-3 font-medium text-red-400 transition hover:bg-red-950 active:bg-red-950 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {isDeleting
+                              ? "削除中..."
+                              : "削除"}
+                          </button>
+
+                        </div>
+
+                      </div>
 
                     </div>
-
-                  </div>
-
-                )
+                  );
+                }
               )}
 
             </div>
-
           )}
+
+        </section>
+
+        {/* ==================================================
+            販売会削除
+        ================================================== */}
+
+        <section className="mt-10 rounded-2xl border border-red-900/70 bg-red-950/20 p-5 sm:mt-12 sm:p-6">
+
+          <h2 className="text-lg font-bold text-red-300">
+            危険な操作
+          </h2>
+
+          <p className="mt-2 text-sm text-slate-400">
+            販売会を削除すると、商品・商品写真もすべて削除されます。
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-red-400">
+            この操作は元に戻せません。
+          </p>
+
+          <button
+            type="button"
+            onClick={
+              handleDeleteMarket
+            }
+            disabled={
+              processing ||
+              reorderingProducts
+            }
+            className="mt-5 min-h-12 w-full rounded-xl border border-red-700 bg-red-950 px-5 py-3 font-bold text-red-300 transition hover:bg-red-900 disabled:opacity-50 sm:w-auto"
+          >
+            {deletingMarket
+              ? "販売会を削除中..."
+              : "販売会を削除"}
+          </button>
 
         </section>
 

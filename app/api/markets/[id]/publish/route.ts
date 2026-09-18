@@ -68,12 +68,22 @@ type GitHubFileInfo = {
   sha?: string;
 };
 
+type GitHubDirectoryItem = {
+  type: string;
+  name: string;
+  path: string;
+  sha: string;
+};
+
 // ============================================================
 // 環境変数
 // ============================================================
 
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
+function getRequiredEnv(
+  name: string
+): string {
+  const value =
+    process.env[name];
 
   if (!value) {
     throw new Error(
@@ -89,25 +99,36 @@ function getRequiredEnv(name: string): string {
 // ============================================================
 
 function cleanDisplayNames(
-  names: string[] | null | undefined
+  names:
+    | string[]
+    | null
+    | undefined
 ): string[] {
-  const result: string[] = [];
+  const result:
+    string[] = [];
 
-  for (const rawName of names ?? []) {
-    const name = rawName.trim();
+  for (
+    const rawName of
+    names ?? []
+  ) {
+    const name =
+      rawName.trim();
 
     if (!name) {
       continue;
     }
 
-    const exists = result.some(
-      (existing) =>
-        existing.toLowerCase() ===
-        name.toLowerCase()
-    );
+    const exists =
+      result.some(
+        (existing) =>
+          existing.toLowerCase() ===
+          name.toLowerCase()
+      );
 
     if (!exists) {
-      result.push(name);
+      result.push(
+        name
+      );
     }
   }
 
@@ -130,11 +151,25 @@ function buildAuthorizedDisplayNames(
 
 function getGitHubConfig() {
   return {
-    token: getRequiredEnv("GITHUB_TOKEN"),
-    owner: getRequiredEnv("GITHUB_OWNER"),
-    repo: getRequiredEnv("GITHUB_REPO"),
+    token:
+      getRequiredEnv(
+        "GITHUB_TOKEN"
+      ),
+
+    owner:
+      getRequiredEnv(
+        "GITHUB_OWNER"
+      ),
+
+    repo:
+      getRequiredEnv(
+        "GITHUB_REPO"
+      ),
+
     branch:
-      process.env.GITHUB_BRANCH || "main",
+      process.env
+        .GITHUB_BRANCH ||
+      "main",
   };
 }
 
@@ -144,9 +179,11 @@ function getGitHubConfig() {
 
 async function githubFetch(
   apiPath: string,
-  options: RequestInit = {}
+  options:
+    RequestInit = {}
 ): Promise<Response> {
-  const config = getGitHubConfig();
+  const config =
+    getGitHubConfig();
 
   return fetch(
     `https://api.github.com/repos/${config.owner}/${config.repo}${apiPath}`,
@@ -166,7 +203,8 @@ async function githubFetch(
         ...options.headers,
       },
 
-      cache: "no-store",
+      cache:
+        "no-store",
     }
   );
 }
@@ -177,25 +215,37 @@ async function githubFetch(
 
 async function getGitHubFileInfo(
   filePath: string
-): Promise<GitHubFileInfo | null> {
-  const config = getGitHubConfig();
+): Promise<
+  GitHubFileInfo | null
+> {
+  const config =
+    getGitHubConfig();
 
-  const encodedPath = filePath
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
+  const encodedPath =
+    filePath
+      .split("/")
+      .map(
+        encodeURIComponent
+      )
+      .join("/");
 
-  const response = await githubFetch(
-    `/contents/${encodedPath}?ref=${encodeURIComponent(
-      config.branch
-    )}`
-  );
+  const response =
+    await githubFetch(
+      `/contents/${encodedPath}?ref=${encodeURIComponent(
+        config.branch
+      )}`
+    );
 
-  if (response.status === 404) {
+  if (
+    response.status ===
+    404
+  ) {
     return null;
   }
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     const errorText =
       await response.text();
 
@@ -204,7 +254,9 @@ async function getGitHubFileInfo(
     );
   }
 
-  return (await response.json()) as GitHubFileInfo;
+  return (
+    await response.json()
+  ) as GitHubFileInfo;
 }
 
 // ============================================================
@@ -213,22 +265,34 @@ async function getGitHubFileInfo(
 
 async function putGitHubFile(
   filePath: string,
-  content: Buffer | string,
+  content:
+    | Buffer
+    | string,
   commitMessage: string
 ): Promise<void> {
-  const config = getGitHubConfig();
+  const config =
+    getGitHubConfig();
 
   const currentFile =
-    await getGitHubFileInfo(filePath);
+    await getGitHubFileInfo(
+      filePath
+    );
 
-  const encodedPath = filePath
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
+  const encodedPath =
+    filePath
+      .split("/")
+      .map(
+        encodeURIComponent
+      )
+      .join("/");
 
   const buffer =
-    typeof content === "string"
-      ? Buffer.from(content, "utf8")
+    typeof content ===
+    "string"
+      ? Buffer.from(
+          content,
+          "utf8"
+        )
       : content;
 
   const body: {
@@ -237,31 +301,47 @@ async function putGitHubFile(
     branch: string;
     sha?: string;
   } = {
-    message: commitMessage,
+    message:
+      commitMessage,
+
     content:
-      buffer.toString("base64"),
-    branch: config.branch,
+      buffer.toString(
+        "base64"
+      ),
+
+    branch:
+      config.branch,
   };
 
-  if (currentFile?.sha) {
-    body.sha = currentFile.sha;
+  if (
+    currentFile?.sha
+  ) {
+    body.sha =
+      currentFile.sha;
   }
 
-  const response = await githubFetch(
-    `/contents/${encodedPath}`,
-    {
-      method: "PUT",
+  const response =
+    await githubFetch(
+      `/contents/${encodedPath}`,
+      {
+        method:
+          "PUT",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify(body),
-    }
-  );
+        body:
+          JSON.stringify(
+            body
+          ),
+      }
+    );
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     const errorText =
       await response.text();
 
@@ -269,6 +349,202 @@ async function putGitHubFile(
       `GitHubへの書き込みに失敗しました (${filePath}): ${response.status} ${errorText}`
     );
   }
+}
+
+// ============================================================
+// GitHubディレクトリ一覧取得
+// ============================================================
+
+async function listGitHubDirectory(
+  directoryPath: string
+): Promise<
+  GitHubDirectoryItem[]
+> {
+  const config =
+    getGitHubConfig();
+
+  const encodedPath =
+    directoryPath
+      .split("/")
+      .map(
+        encodeURIComponent
+      )
+      .join("/");
+
+  const response =
+    await githubFetch(
+      `/contents/${encodedPath}?ref=${encodeURIComponent(
+        config.branch
+      )}`
+    );
+
+  // フォルダがまだ存在しない場合
+  if (
+    response.status ===
+    404
+  ) {
+    return [];
+  }
+
+  if (
+    !response.ok
+  ) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `GitHubディレクトリ取得に失敗しました (${directoryPath}): ${response.status} ${errorText}`
+    );
+  }
+
+  const result =
+    await response.json();
+
+  if (
+    !Array.isArray(
+      result
+    )
+  ) {
+    return [];
+  }
+
+  return (
+    result as
+      GitHubDirectoryItem[]
+  );
+}
+
+// ============================================================
+// GitHubファイル削除
+// ============================================================
+
+async function deleteGitHubFile(
+  filePath: string,
+  sha: string,
+  commitMessage: string
+): Promise<void> {
+  const config =
+    getGitHubConfig();
+
+  const encodedPath =
+    filePath
+      .split("/")
+      .map(
+        encodeURIComponent
+      )
+      .join("/");
+
+  const response =
+    await githubFetch(
+      `/contents/${encodedPath}`,
+      {
+        method:
+          "DELETE",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body:
+          JSON.stringify({
+            message:
+              commitMessage,
+
+            sha,
+
+            branch:
+              config.branch,
+          }),
+      }
+    );
+
+  if (
+    !response.ok
+  ) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `GitHubファイル削除に失敗しました (${filePath}): ${response.status} ${errorText}`
+    );
+  }
+}
+
+// ============================================================
+// 古いRuntime画像削除
+//
+// 現在の公開で使っていない
+// XX.jpgだけを削除する。
+// ============================================================
+
+async function cleanupStaleRuntimeImages(
+  slotFolder: string,
+  activeImageFileNames:
+    string[],
+  marketId: string
+): Promise<number> {
+  const directoryPath =
+    `runtime/slots/${slotFolder}/images`;
+
+  const existingFiles =
+    await listGitHubDirectory(
+      directoryPath
+    );
+
+  const activeFileNames =
+    new Set(
+      activeImageFileNames
+    );
+
+  let deletedCount =
+    0;
+
+  for (
+    const item of
+    existingFiles
+  ) {
+    // ファイル以外は無視
+    if (
+      item.type !==
+      "file"
+    ) {
+      continue;
+    }
+
+    // Runtime画像形式だけを対象にする
+    //
+    // 00.jpg
+    // 01.jpg
+    // ...
+    // 63.jpg
+    if (
+      !/^\d{2}\.jpg$/i.test(
+        item.name
+      )
+    ) {
+      continue;
+    }
+
+    // 今回も使用中なら残す
+    if (
+      activeFileNames.has(
+        item.name
+      )
+    ) {
+      continue;
+    }
+
+    await deleteGitHubFile(
+      item.path,
+      item.sha,
+      `Cleanup stale image ${item.name} for ${marketId}`
+    );
+
+    deletedCount++;
+  }
+
+  return deletedCount;
 }
 
 // ============================================================
@@ -285,8 +561,13 @@ async function ensureRuntimeSlot(
   supabaseUrl: string,
   secretKey: string
 ): Promise<number> {
-  if (market.runtime_slot !== null) {
-    return market.runtime_slot;
+  if (
+    market.runtime_slot !==
+    null
+  ) {
+    return (
+      market.runtime_slot
+    );
   }
 
   const supabaseAdmin =
@@ -295,8 +576,11 @@ async function ensureRuntimeSlot(
       secretKey,
       {
         auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+          autoRefreshToken:
+            false,
+
+          persistSession:
+            false,
         },
       }
     );
@@ -311,18 +595,28 @@ async function ensureRuntimeSlot(
     // --------------------------------------------------------
 
     const {
-      data: usedMarkets,
-      error: usedError,
-    } = await supabaseAdmin
-      .from("markets")
-      .select("runtime_slot")
-      .not(
-        "runtime_slot",
-        "is",
-        null
-      );
+      data:
+        usedMarkets,
 
-    if (usedError) {
+      error:
+        usedError,
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .select(
+          "runtime_slot"
+        )
+        .not(
+          "runtime_slot",
+          "is",
+          null
+        );
+
+    if (
+      usedError
+    ) {
       throw new Error(
         `使用中スロットを取得できませんでした: ${usedError.message}`
       );
@@ -332,10 +626,12 @@ async function ensureRuntimeSlot(
       new Set<number>();
 
     for (
-      const item of usedMarkets ?? []
+      const item of
+      usedMarkets ?? []
     ) {
       if (
-        item.runtime_slot !== null
+        item.runtime_slot !==
+        null
       ) {
         usedSlots.add(
           item.runtime_slot
@@ -348,20 +644,30 @@ async function ensureRuntimeSlot(
     // --------------------------------------------------------
 
     let freeSlot:
-      number | null = null;
+      number | null =
+      null;
 
     for (
       let slot = 0;
       slot < 64;
       slot++
     ) {
-      if (!usedSlots.has(slot)) {
-        freeSlot = slot;
+      if (
+        !usedSlots.has(
+          slot
+        )
+      ) {
+        freeSlot =
+          slot;
+
         break;
       }
     }
 
-    if (freeSlot === null) {
+    if (
+      freeSlot ===
+      null
+    ) {
       throw new Error(
         "VRChat用のRuntime Slotがすべて使用されています。"
       );
@@ -372,28 +678,44 @@ async function ensureRuntimeSlot(
     // --------------------------------------------------------
 
     const {
-      data: updatedMarket,
-      error: updateError,
-    } = await supabaseAdmin
-      .from("markets")
-      .update({
-        runtime_slot: freeSlot,
-      })
-      .eq("id", market.id)
-      .is(
-        "runtime_slot",
-        null
-      )
-      .select("runtime_slot")
-      .maybeSingle();
+      data:
+        updatedMarket,
+
+      error:
+        updateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .update({
+          runtime_slot:
+            freeSlot,
+        })
+        .eq(
+          "id",
+          market.id
+        )
+        .is(
+          "runtime_slot",
+          null
+        )
+        .select(
+          "runtime_slot"
+        )
+        .maybeSingle();
 
     if (
       !updateError &&
       updatedMarket &&
-      updatedMarket.runtime_slot !==
+      updatedMarket
+        .runtime_slot !==
         null
     ) {
-      return updatedMarket.runtime_slot;
+      return (
+        updatedMarket
+          .runtime_slot
+      );
     }
 
     // --------------------------------------------------------
@@ -401,25 +723,42 @@ async function ensureRuntimeSlot(
     // --------------------------------------------------------
 
     const {
-      data: latestMarket,
-      error: latestError,
-    } = await supabaseAdmin
-      .from("markets")
-      .select("runtime_slot")
-      .eq("id", market.id)
-      .single();
+      data:
+        latestMarket,
 
-    if (latestError) {
+      error:
+        latestError,
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .select(
+          "runtime_slot"
+        )
+        .eq(
+          "id",
+          market.id
+        )
+        .single();
+
+    if (
+      latestError
+    ) {
       throw new Error(
         `Runtime Slotの確認に失敗しました: ${latestError.message}`
       );
     }
 
     if (
-      latestMarket.runtime_slot !==
+      latestMarket
+        .runtime_slot !==
       null
     ) {
-      return latestMarket.runtime_slot;
+      return (
+        latestMarket
+          .runtime_slot
+      );
     }
   }
 
@@ -433,7 +772,8 @@ async function ensureRuntimeSlot(
 // ============================================================
 
 export async function POST(
-  request: NextRequest,
+  request:
+    NextRequest,
 
   context: {
     params: Promise<{
@@ -446,7 +786,10 @@ export async function POST(
     // Market UUID
     // ========================================================
 
-    const { id: marketUuid } =
+    const {
+      id:
+        marketUuid,
+    } =
       await context.params;
 
     // ========================================================
@@ -483,14 +826,16 @@ export async function POST(
         "Bearer "
       )
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "ログイン情報が送信されていません。",
-        },
-        {
-          status: 401,
-        }
+      return (
+        NextResponse.json(
+          {
+            error:
+              "ログイン情報が送信されていません。",
+          },
+          {
+            status: 401,
+          }
+        )
       );
     }
 
@@ -499,15 +844,19 @@ export async function POST(
         .slice(7)
         .trim();
 
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          error:
-            "アクセストークンがありません。",
-        },
-        {
-          status: 401,
-        }
+    if (
+      !accessToken
+    ) {
+      return (
+        NextResponse.json(
+          {
+            error:
+              "アクセストークンがありません。",
+          },
+          {
+            status: 401,
+          }
+        )
       );
     }
 
@@ -528,15 +877,21 @@ export async function POST(
           },
 
           auth: {
-            autoRefreshToken: false,
-            persistSession: false,
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
           },
         }
       );
 
     const {
-      data: userData,
-      error: userError,
+      data:
+        userData,
+
+      error:
+        userError,
     } =
       await supabaseUser
         .auth
@@ -546,18 +901,21 @@ export async function POST(
       userError ||
       !userData.user
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "ログイン情報を確認できませんでした。",
-        },
-        {
-          status: 401,
-        }
+      return (
+        NextResponse.json(
+          {
+            error:
+              "ログイン情報を確認できませんでした。",
+          },
+          {
+            status: 401,
+          }
+        )
       );
     }
 
-    const user = userData.user;
+    const user =
+      userData.user;
 
     // ========================================================
     // Admin Client
@@ -569,8 +927,11 @@ export async function POST(
         secretKey,
         {
           auth: {
-            autoRefreshToken: false,
-            persistSession: false,
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
           },
         }
       );
@@ -580,30 +941,48 @@ export async function POST(
     // ========================================================
 
     const {
-      data: marketData,
-      error: marketError,
-    } = await supabaseAdmin
-      .from("markets")
-      .select("*")
-      .eq("id", marketUuid)
-      .eq("user_id", user.id)
-      .maybeSingle();
+      data:
+        marketData,
 
-    if (marketError) {
+      error:
+        marketError,
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .select("*")
+        .eq(
+          "id",
+          marketUuid
+        )
+        .eq(
+          "user_id",
+          user.id
+        )
+        .maybeSingle();
+
+    if (
+      marketError
+    ) {
       throw new Error(
         `販売会取得に失敗しました: ${marketError.message}`
       );
     }
 
-    if (!marketData) {
-      return NextResponse.json(
-        {
-          error:
-            "販売会が見つからないか、公開する権限がありません。",
-        },
-        {
-          status: 404,
-        }
+    if (
+      !marketData
+    ) {
+      return (
+        NextResponse.json(
+          {
+            error:
+              "販売会が見つからないか、公開する権限がありません。",
+          },
+          {
+            status: 404,
+          }
+        )
       );
     }
 
@@ -616,12 +995,14 @@ export async function POST(
 
     const sellerDisplayNames =
       cleanDisplayNames(
-        market.seller_display_names
+        market
+          .seller_display_names
       );
 
     const staffDisplayNames =
       cleanDisplayNames(
-        market.staff_display_names
+        market
+          .staff_display_names
       );
 
     const authorizedDisplayNames =
@@ -631,16 +1012,19 @@ export async function POST(
       );
 
     if (
-      sellerDisplayNames.length === 0
+      sellerDisplayNames
+        .length === 0
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "VRChat販売者名が設定されていません。",
-        },
-        {
-          status: 400,
-        }
+      return (
+        NextResponse.json(
+          {
+            error:
+              "VRChat販売者名が設定されていません。",
+          },
+          {
+            status: 400,
+          }
+        )
       );
     }
 
@@ -650,7 +1034,8 @@ export async function POST(
 
     const streamUrl =
       (
-        market.stream_url ?? ""
+        market.stream_url ??
+        ""
       ).trim();
 
     // ========================================================
@@ -658,52 +1043,74 @@ export async function POST(
     // ========================================================
 
     const {
-      data: productData,
-      error: productError,
-    } = await supabaseAdmin
-      .from("products")
-      .select("*")
-      .eq(
-        "market_id",
-        marketUuid
-      )
-      .order(
-        "sort_order",
-        {
-          ascending: true,
-        }
-      );
+      data:
+        productData,
 
-    if (productError) {
+      error:
+        productError,
+    } =
+      await supabaseAdmin
+        .from(
+          "products"
+        )
+        .select("*")
+        .eq(
+          "market_id",
+          marketUuid
+        )
+        .order(
+          "sort_order",
+          {
+            ascending:
+              true,
+          }
+        );
+
+    if (
+      productError
+    ) {
       throw new Error(
         `商品を取得できませんでした: ${productError.message}`
       );
     }
 
     const products =
-      (productData ?? []) as Product[];
+      (
+        productData ??
+        []
+      ) as Product[];
 
-    if (products.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "商品が1件もありません。",
-        },
-        {
-          status: 400,
-        }
+    if (
+      products.length ===
+      0
+    ) {
+      return (
+        NextResponse.json(
+          {
+            error:
+              "商品が1件もありません。",
+          },
+          {
+            status: 400,
+          }
+        )
       );
     }
 
-    if (products.length > 64) {
-      return NextResponse.json(
-        {
-          error:
-            "商品は最大64件までです。",
-        },
-        {
-          status: 400,
-        }
+    if (
+      products.length >
+      64
+    ) {
+      return (
+        NextResponse.json(
+          {
+            error:
+              "商品は最大64件までです。",
+          },
+          {
+            status: 400,
+          }
+        )
       );
     }
 
@@ -713,35 +1120,49 @@ export async function POST(
 
     const productIds =
       products.map(
-        (product) =>
+        (
+          product
+        ) =>
           product.id
       );
 
     const {
-      data: imageData,
-      error: imageError,
-    } = await supabaseAdmin
-      .from("product_images")
-      .select("*")
-      .in(
-        "product_id",
-        productIds
-      )
-      .order(
-        "sort_order",
-        {
-          ascending: true,
-        }
-      );
+      data:
+        imageData,
 
-    if (imageError) {
+      error:
+        imageError,
+    } =
+      await supabaseAdmin
+        .from(
+          "product_images"
+        )
+        .select("*")
+        .in(
+          "product_id",
+          productIds
+        )
+        .order(
+          "sort_order",
+          {
+            ascending:
+              true,
+          }
+        );
+
+    if (
+      imageError
+    ) {
       throw new Error(
         `商品画像情報を取得できませんでした: ${imageError.message}`
       );
     }
 
     const productImages =
-      (imageData ?? []) as ProductImage[];
+      (
+        imageData ??
+        []
+      ) as ProductImage[];
 
     // ========================================================
     // 商品別画像へ整理
@@ -753,7 +1174,10 @@ export async function POST(
         ProductImage[]
       >();
 
-    for (const product of products) {
+    for (
+      const product of
+      products
+    ) {
       imagesByProduct.set(
         product.id,
         []
@@ -761,24 +1185,33 @@ export async function POST(
     }
 
     for (
-      const image of productImages
+      const image of
+      productImages
     ) {
       const list =
         imagesByProduct.get(
           image.product_id
         );
 
-      if (list) {
-        list.push(image);
+      if (
+        list
+      ) {
+        list.push(
+          image
+        );
       }
     }
 
     for (
       const list of
-        imagesByProduct.values()
+      imagesByProduct
+        .values()
     ) {
       list.sort(
-        (a, b) =>
+        (
+          a,
+          b
+        ) =>
           a.sort_order -
           b.sort_order
       );
@@ -789,37 +1222,46 @@ export async function POST(
     // ========================================================
 
     for (
-      const product of products
+      const product of
+      products
     ) {
       const images =
         imagesByProduct.get(
           product.id
         ) ?? [];
 
-      if (images.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              `「${product.name}」に商品写真がありません。`,
-          },
-          {
-            status: 400,
-          }
+      if (
+        images.length ===
+        0
+      ) {
+        return (
+          NextResponse.json(
+            {
+              error:
+                `「${product.name}」に商品写真がありません。`,
+            },
+            {
+              status: 400,
+            }
+          )
         );
       }
     }
 
     if (
-      productImages.length > 64
+      productImages.length >
+      64
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "商品写真は販売会全体で最大64枚までです。",
-        },
-        {
-          status: 400,
-        }
+      return (
+        NextResponse.json(
+          {
+            error:
+              "商品写真は販売会全体で最大64枚までです。",
+          },
+          {
+            status: 400,
+          }
+        )
       );
     }
 
@@ -835,11 +1277,12 @@ export async function POST(
       );
 
     const slotFolder =
-      String(runtimeSlot)
-        .padStart(
-          2,
-          "0"
-        );
+      String(
+        runtimeSlot
+      ).padStart(
+        2,
+        "0"
+      );
 
     // ========================================================
     // Runtime商品
@@ -848,14 +1291,25 @@ export async function POST(
     const runtimeProducts:
       RuntimeProduct[] = [];
 
-    let nextImageSlot = 0;
+    let nextImageSlot =
+      0;
+
+    // ========================================================
+    // 今回使用する画像ファイル名
+    //
+    // 古い画像削除時に使用する
+    // ========================================================
+
+    const activeImageFileNames:
+      string[] = [];
 
     // ========================================================
     // 画像変換・GitHub公開
     // ========================================================
 
     for (
-      const product of products
+      const product of
+      products
     ) {
       const images =
         imagesByProduct.get(
@@ -866,7 +1320,8 @@ export async function POST(
         number[] = [];
 
       for (
-        const image of images
+        const image of
+        images
       ) {
         const imageSlot =
           nextImageSlot;
@@ -882,8 +1337,11 @@ export async function POST(
         // ----------------------------------------------------
 
         const {
-          data: downloadedFile,
-          error: downloadError,
+          data:
+            downloadedFile,
+
+          error:
+            downloadError,
         } =
           await supabaseAdmin
             .storage
@@ -900,7 +1358,8 @@ export async function POST(
         ) {
           throw new Error(
             `「${product.name}」の画像を取得できませんでした: ${
-              downloadError?.message ??
+              downloadError
+                ?.message ??
               "Unknown error"
             }`
           );
@@ -922,23 +1381,42 @@ export async function POST(
           )
             .rotate()
             .resize({
-              width: 1600,
-              height: 1600,
-              fit: "inside",
+              width:
+                1600,
+
+              height:
+                1600,
+
+              fit:
+                "inside",
+
               withoutEnlargement:
                 true,
             })
             .jpeg({
-              quality: 82,
-              mozjpeg: true,
+              quality:
+                82,
+
+              mozjpeg:
+                true,
             })
             .toBuffer();
 
         const imageFileName =
-          `${String(imageSlot).padStart(
+          `${String(
+            imageSlot
+          ).padStart(
             2,
             "0"
           )}.jpg`;
+
+        // ----------------------------------------------------
+        // 今回使用する画像として記録
+        // ----------------------------------------------------
+
+        activeImageFileNames.push(
+          imageFileName
+        );
 
         const githubImagePath =
           `runtime/slots/${slotFolder}/images/${imageFileName}`;
@@ -961,11 +1439,42 @@ export async function POST(
           product.description,
 
         initialState:
-          product.initial_state,
+          product
+            .initial_state,
 
         imageSlots,
       });
     }
+
+    // ========================================================
+    // 古いRuntime画像を削除
+    //
+    // 例:
+    //
+    // 前回
+    // 00.jpg
+    // 01.jpg
+    // 02.jpg
+    // 03.jpg
+    //
+    // 今回
+    // 00.jpg
+    // 01.jpg
+    //
+    // ↓
+    //
+    // 02.jpg
+    // 03.jpg
+    //
+    // を自動削除する。
+    // ========================================================
+
+    const deletedStaleImageCount =
+      await cleanupStaleRuntimeImages(
+        slotFolder,
+        activeImageFileNames,
+        market.market_id
+      );
 
     // ========================================================
     // market.json
@@ -973,7 +1482,8 @@ export async function POST(
 
     const runtimeMarket:
       RuntimeMarket = {
-      schemaVersion: 1,
+      schemaVersion:
+        1,
 
       marketId:
         market.market_id,
@@ -1016,18 +1526,23 @@ export async function POST(
 
       error:
         publishedMarketError,
-    } = await supabaseAdmin
-      .from("markets")
-      .select(
-        "id, market_id, title, seller_display_names, staff_display_names, runtime_slot, status"
-      )
-      .not(
-        "runtime_slot",
-        "is",
-        null
-      );
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .select(
+          "id, market_id, title, seller_display_names, staff_display_names, runtime_slot, status"
+        )
+        .not(
+          "runtime_slot",
+          "is",
+          null
+        );
 
-    if (publishedMarketError) {
+    if (
+      publishedMarketError
+    ) {
       throw new Error(
         `catalog用販売会一覧を取得できませんでした: ${publishedMarketError.message}`
       );
@@ -1041,10 +1556,12 @@ export async function POST(
 
     for (
       const item of
-        publishedMarketData ?? []
+      publishedMarketData ??
+      []
     ) {
       if (
-        item.runtime_slot === null
+        item.runtime_slot ===
+        null
       ) {
         continue;
       }
@@ -1052,19 +1569,22 @@ export async function POST(
       if (
         item.status !==
           "published" &&
-        item.id !== market.id
+        item.id !==
+          market.id
       ) {
         continue;
       }
 
       const itemSellerNames =
         cleanDisplayNames(
-          item.seller_display_names
+          item
+            .seller_display_names
         );
 
       const itemStaffNames =
         cleanDisplayNames(
-          item.staff_display_names
+          item
+            .staff_display_names
         );
 
       const itemAuthorizedNames =
@@ -1091,7 +1611,10 @@ export async function POST(
       );
     }
 
+    // ========================================================
     // 今回公開するMarketを必ず含める
+    // ========================================================
+
     catalogMarkets.set(
       market.market_id,
       {
@@ -1112,8 +1635,12 @@ export async function POST(
       Array.from(
         catalogMarkets.values()
       ).sort(
-        (a, b) =>
-          a.slot - b.slot
+        (
+          a,
+          b
+        ) =>
+          a.slot -
+          b.slot
       );
 
     const catalogJson =
@@ -1141,25 +1668,32 @@ export async function POST(
     // ========================================================
 
     const {
-      error: publishStateError,
-    } = await supabaseAdmin
-      .from("markets")
-      .update({
-        status: "published",
+      error:
+        publishStateError,
+    } =
+      await supabaseAdmin
+        .from(
+          "markets"
+        )
+        .update({
+          status:
+            "published",
 
-        runtime_slot:
-          runtimeSlot,
+          runtime_slot:
+            runtimeSlot,
 
-        updated_at:
-          new Date()
-            .toISOString(),
-      })
-      .eq(
-        "id",
-        market.id
-      );
+          updated_at:
+            new Date()
+              .toISOString(),
+        })
+        .eq(
+          "id",
+          market.id
+        );
 
-    if (publishStateError) {
+    if (
+      publishStateError
+    ) {
       throw new Error(
         `公開状態を保存できませんでした: ${publishStateError.message}`
       );
@@ -1169,49 +1703,65 @@ export async function POST(
     // 成功
     // ========================================================
 
-    return NextResponse.json({
-      success: true,
+    return (
+      NextResponse.json({
+        success:
+          true,
 
-      marketId:
-        market.market_id,
+        marketId:
+          market.market_id,
 
-      runtimeSlot,
+        runtimeSlot,
 
-      productCount:
-        products.length,
+        productCount:
+          products.length,
 
-      imageCount:
-        productImages.length,
+        imageCount:
+          productImages.length,
 
-      operatorCount:
-        authorizedDisplayNames.length,
+        deletedStaleImageCount,
 
-      streamConfigured:
-        streamUrl.length > 0,
+        operatorCount:
+          authorizedDisplayNames
+            .length,
 
-      message:
-        "販売会を公開しました。",
-    });
+        streamConfigured:
+          streamUrl.length >
+          0,
 
-  } catch (error) {
+        message:
+          "販売会を公開しました。",
+      })
+    );
+
+  } catch (
+    error
+  ) {
     console.error(
       "Publish error:",
       error
     );
 
     const message =
-      error instanceof Error
+      error instanceof
+      Error
         ? error.message
         : "公開処理中に不明なエラーが発生しました。";
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: message,
-      },
-      {
-        status: 500,
-      }
+    return (
+      NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            message,
+        },
+        {
+          status:
+            500,
+        }
+      )
     );
   }
 }

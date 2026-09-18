@@ -6,8 +6,18 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useParams, useRouter } from "next/navigation";
+
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
+
 import { createClient } from "@/lib/supabase/client";
+
+
+// ============================================================
+// 型
+// ============================================================
 
 type Product = {
   id: string;
@@ -19,6 +29,7 @@ type Product = {
   sort_order: number;
 };
 
+
 type ProductImage = {
   id: string;
   product_id: string;
@@ -28,188 +39,356 @@ type ProductImage = {
   preview_url?: string;
 };
 
+
+// ============================================================
+// ページ
+// ============================================================
+
 export default function ProductEditPage() {
-  const params = useParams();
-  const router = useRouter();
+  const params =
+    useParams();
 
-  const [supabase] = useState(() => createClient());
+  const router =
+    useRouter();
 
-  const marketUuid = params.id as string;
-  const productUuid = params.productId as string;
+  const [supabase] =
+    useState(
+      () =>
+        createClient()
+    );
+
+
+  const marketUuid =
+    params.id as string;
+
+  const productUuid =
+    params.productId as string;
+
 
   // ============================================================
   // 商品情報
   // ============================================================
 
-  const [product, setProduct] =
-    useState<Product | null>(null);
+  const [
+    product,
+    setProduct,
+  ] =
+    useState<Product | null>(
+      null
+    );
 
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] =
+
+  const [
+    name,
+    setName,
+  ] =
     useState("");
 
-  const [initialState, setInitialState] =
-    useState("AVAILABLE");
+
+  const [
+    price,
+    setPrice,
+  ] =
+    useState("");
+
+
+  const [
+    description,
+    setDescription,
+  ] =
+    useState("");
+
+
+  const [
+    initialState,
+    setInitialState,
+  ] =
+    useState(
+      "AVAILABLE"
+    );
+
 
   // ============================================================
   // 商品画像
   // ============================================================
 
-  const [images, setImages] =
-    useState<ProductImage[]>([]);
+  const [
+    images,
+    setImages,
+  ] =
+    useState<ProductImage[]>(
+      []
+    );
+
 
   // ============================================================
   // 状態
   // ============================================================
 
-  const [loading, setLoading] = useState(true);
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
-  const [saving, setSaving] =
+
+  const [
+    saving,
+    setSaving,
+  ] =
     useState(false);
 
-  const [uploading, setUploading] =
+
+  const [
+    uploading,
+    setUploading,
+  ] =
     useState(false);
 
-  const [deletingImageId, setDeletingImageId] =
-    useState<string | null>(null);
 
-  const [movingImageId, setMovingImageId] =
-    useState<string | null>(null);
+  const [
+    deletingImageId,
+    setDeletingImageId,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  const [
+    movingImageId,
+    setMovingImageId,
+  ] =
+    useState<string | null>(
+      null
+    );
+
 
   // ============================================================
-  // 商品画像一覧を読み込む
+  // 商品画像読み込み
   // ============================================================
 
-  const loadImages = useCallback(async () => {
-    const {
-      data: imageData,
-      error: imageError,
-    } = await supabase
-      .from("product_images")
-      .select("*")
-      .eq("product_id", productUuid)
-      .order("sort_order", {
-        ascending: true,
-      });
+  const loadImages =
+    useCallback(
+      async () => {
+        const {
+          data:
+            imageData,
 
-    if (imageError) {
-      console.error(imageError);
+          error:
+            imageError,
+        } =
+          await supabase
+            .from(
+              "product_images"
+            )
+            .select("*")
+            .eq(
+              "product_id",
+              productUuid
+            )
+            .order(
+              "sort_order",
+              {
+                ascending:
+                  true,
+              }
+            );
 
-      alert(
-        "商品写真を読み込めませんでした：" +
-          imageError.message
-      );
 
-      return;
-    }
+        if (
+          imageError
+        ) {
+          console.error(
+            imageError
+          );
 
-    const loadedImages =
-      imageData ?? [];
+          alert(
+            "商品写真を読み込めませんでした：" +
+              imageError.message
+          );
 
-    // private Bucketなので、
-    // 管理画面用の一時URLを発行する
-    const imagesWithPreview =
-      await Promise.all(
-        loadedImages.map(
-          async (image: ProductImage) => {
-            const {
-              data,
-              error,
-            } =
-              await supabase.storage
-                .from(
-                  "product-images-private"
-                )
-                .createSignedUrl(
-                  image.storage_path,
-                  60 * 60
-                );
+          return;
+        }
 
-            if (error) {
-              console.error(error);
 
-              return image;
-            }
+        const loadedImages =
+          imageData ?? [];
 
-            return {
-              ...image,
-              preview_url:
-                data.signedUrl,
-            };
-          }
-        )
-      );
 
-    setImages(imagesWithPreview);
-  }, [productUuid, supabase]);
+        // --------------------------------------------------------
+        // private StorageなのでSigned URLを作る
+        // --------------------------------------------------------
+
+        const imagesWithPreview =
+          await Promise.all(
+            loadedImages.map(
+              async (
+                image:
+                  ProductImage
+              ) => {
+                const {
+                  data,
+                  error,
+                } =
+                  await supabase
+                    .storage
+                    .from(
+                      "product-images-private"
+                    )
+                    .createSignedUrl(
+                      image.storage_path,
+                      60 * 60
+                    );
+
+
+                if (
+                  error
+                ) {
+                  console.error(
+                    error
+                  );
+
+                  return image;
+                }
+
+
+                return {
+                  ...image,
+
+                  preview_url:
+                    data.signedUrl,
+                };
+              }
+            )
+          );
+
+
+        setImages(
+          imagesWithPreview
+        );
+      },
+
+      [
+        productUuid,
+        supabase,
+      ]
+    );
+
 
   // ============================================================
   // 商品読み込み
   // ============================================================
 
-  useEffect(() => {
-    async function loadProduct() {
-      setLoading(true);
-
-      const { data, error } =
-        await supabase
-          .from("products")
-          .select("*")
-          .eq("id", productUuid)
-          .eq(
-            "market_id",
-            marketUuid
-          )
-          .single();
-
-      if (error) {
-        console.error(error);
-
-        alert(
-          "商品を読み込めませんでした：" +
-            error.message
+  useEffect(
+    () => {
+      async function loadProduct() {
+        setLoading(
+          true
         );
 
-        setLoading(false);
-        return;
+
+        const {
+          data,
+          error,
+        } =
+          await supabase
+            .from(
+              "products"
+            )
+            .select("*")
+            .eq(
+              "id",
+              productUuid
+            )
+            .eq(
+              "market_id",
+              marketUuid
+            )
+            .single();
+
+
+        if (
+          error
+        ) {
+          console.error(
+            error
+          );
+
+
+          alert(
+            "商品を読み込めませんでした：" +
+              error.message
+          );
+
+
+          setLoading(
+            false
+          );
+
+
+          return;
+        }
+
+
+        setProduct(
+          data
+        );
+
+
+        setName(
+          data.name
+        );
+
+
+        setPrice(
+          String(
+            data.price
+          )
+        );
+
+
+        setDescription(
+          data.description ??
+            ""
+        );
+
+
+        setInitialState(
+          data.initial_state
+        );
+
+
+        await loadImages();
+
+
+        setLoading(
+          false
+        );
       }
 
-      setProduct(data);
 
-      setName(data.name);
+      loadProduct();
 
-      setPrice(
-        String(data.price)
-      );
+    },
 
-      setDescription(
-        data.description ?? ""
-      );
+    [
+      marketUuid,
+      productUuid,
+      supabase,
+      loadImages,
+    ]
+  );
 
-      setInitialState(
-        data.initial_state
-      );
-
-      await loadImages();
-
-      setLoading(false);
-    }
-
-    loadProduct();
-  }, [
-    marketUuid,
-    productUuid,
-    supabase,
-    loadImages,
-  ]);
 
   // ============================================================
   // 商品情報保存
   // ============================================================
 
   async function handleSave() {
-    if (!name.trim()) {
+    if (
+      !name.trim()
+    ) {
       alert(
         "商品名を入力してください。"
       );
@@ -217,14 +396,19 @@ export default function ProductEditPage() {
       return;
     }
 
+
     const priceNumber =
-      Number(price);
+      Number(
+        price
+      );
+
 
     if (
       !Number.isInteger(
         priceNumber
       ) ||
-      priceNumber < 0
+      priceNumber <
+        0
     ) {
       alert(
         "価格は0以上の整数で入力してください。"
@@ -233,13 +417,22 @@ export default function ProductEditPage() {
       return;
     }
 
-    setSaving(true);
 
-    const { error } =
+    setSaving(
+      true
+    );
+
+
+    const {
+      error,
+    } =
       await supabase
-        .from("products")
+        .from(
+          "products"
+        )
         .update({
-          name: name.trim(),
+          name:
+            name.trim(),
 
           price:
             priceNumber,
@@ -251,7 +444,8 @@ export default function ProductEditPage() {
             initialState,
 
           updated_at:
-            new Date().toISOString(),
+            new Date()
+              .toISOString(),
         })
         .eq(
           "id",
@@ -262,46 +456,92 @@ export default function ProductEditPage() {
           marketUuid
         );
 
-    if (error) {
-      console.error(error);
+
+    setSaving(
+      false
+    );
+
+
+    if (
+      error
+    ) {
+      console.error(
+        error
+      );
+
 
       alert(
         "商品の保存に失敗しました：" +
           error.message
       );
 
-      setSaving(false);
+
       return;
     }
 
-    alert(
-      "商品情報を保存しました。"
-    );
 
-    setSaving(false);
+    setProduct(
+      (
+        current
+      ) => {
+        if (
+          !current
+        ) {
+          return current;
+        }
+
+
+        return {
+          ...current,
+
+          name:
+            name.trim(),
+
+          price:
+            priceNumber,
+
+          description:
+            description.trim(),
+
+          initial_state:
+            initialState,
+        };
+      }
+    );
   }
 
+
   // ============================================================
-  // 写真アップロード
+  // 画像追加
   // ============================================================
 
   async function handleImageUpload(
-    event: ChangeEvent<HTMLInputElement>
+    event:
+      ChangeEvent<HTMLInputElement>
   ) {
     const file =
-      event.target.files?.[0];
+      event.target
+        .files?.[0];
 
-    event.target.value = "";
 
-    if (!file) {
+    event.target.value =
+      "";
+
+
+    if (
+      !file
+    ) {
       return;
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+
+    const allowedTypes =
+      [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ];
+
 
     if (
       !allowedTypes.includes(
@@ -315,8 +555,12 @@ export default function ProductEditPage() {
       return;
     }
 
+
     const maxFileSize =
-      20 * 1024 * 1024;
+      20 *
+      1024 *
+      1024;
+
 
     if (
       file.size >
@@ -329,76 +573,106 @@ export default function ProductEditPage() {
       return;
     }
 
-    setUploading(true);
+
+    setUploading(
+      true
+    );
+
 
     // ----------------------------------------------------------
-    // ログインユーザーを取得
+    // User
     // ----------------------------------------------------------
 
     const {
-      data: userData,
-      error: userError,
+      data:
+        userData,
+
+      error:
+        userError,
     } =
-      await supabase.auth.getUser();
+      await supabase.auth
+        .getUser();
+
 
     if (
       userError ||
       !userData.user
     ) {
-      console.error(userError);
+      console.error(
+        userError
+      );
+
 
       alert(
         "ログイン情報を取得できませんでした。"
       );
 
-      setUploading(false);
+
+      setUploading(
+        false
+      );
+
+
       return;
     }
+
 
     const userId =
       userData.user.id;
 
+
     // ----------------------------------------------------------
-    // 元画像の拡張子
+    // 拡張子
     // ----------------------------------------------------------
 
-    let extension = "jpg";
+    let extension =
+      "jpg";
+
 
     if (
       file.type ===
       "image/png"
     ) {
-      extension = "png";
+      extension =
+        "png";
     }
+
 
     if (
       file.type ===
       "image/webp"
     ) {
-      extension = "webp";
+      extension =
+        "webp";
     }
 
+
     // ----------------------------------------------------------
-    // private保存パス
+    // Storage path
     // ----------------------------------------------------------
 
     const randomId =
       crypto.randomUUID();
 
+
     const fileName =
       `${Date.now()}-${randomId}.${extension}`;
+
 
     const storagePath =
       `${userId}/${productUuid}/${fileName}`;
 
+
     // ----------------------------------------------------------
-    // Storageへ保存
+    // Storage upload
     // ----------------------------------------------------------
 
     const {
-      error: uploadError,
+      error:
+        uploadError,
     } =
-      await supabase.storage
+      await supabase
+        .storage
         .from(
           "product-images-private"
         )
@@ -417,44 +691,61 @@ export default function ProductEditPage() {
           }
         );
 
-    if (uploadError) {
+
+    if (
+      uploadError
+    ) {
       console.error(
         uploadError
       );
+
 
       alert(
         "画像アップロードに失敗しました：" +
           uploadError.message
       );
 
-      setUploading(false);
+
+      setUploading(
+        false
+      );
+
+
       return;
     }
 
+
     // ----------------------------------------------------------
-    // 次の表示順
+    // 次のsort_order
     // ----------------------------------------------------------
 
-    let nextSortOrder = 0;
+    let nextSortOrder =
+      0;
+
 
     if (
-      images.length > 0
+      images.length >
+      0
     ) {
       nextSortOrder =
         Math.max(
           ...images.map(
-            (image) =>
+            (
+              image
+            ) =>
               image.sort_order
           )
         ) + 1;
     }
 
+
     // ----------------------------------------------------------
-    // DBへ登録
+    // DB登録
     // ----------------------------------------------------------
 
     const {
-      error: insertError,
+      error:
+        insertError,
     } =
       await supabase
         .from(
@@ -471,72 +762,104 @@ export default function ProductEditPage() {
             storagePath,
         });
 
-    if (insertError) {
+
+    if (
+      insertError
+    ) {
       console.error(
         insertError
       );
 
-      // DB保存に失敗したら
-      // Storage側の画像も削除
-      await supabase.storage
+
+      // DB登録失敗ならStorageを戻す
+      await supabase
+        .storage
         .from(
           "product-images-private"
         )
-        .remove([
-          storagePath,
-        ]);
+        .remove(
+          [
+            storagePath,
+          ]
+        );
+
 
       alert(
         "画像情報の保存に失敗しました：" +
           insertError.message
       );
 
-      setUploading(false);
+
+      setUploading(
+        false
+      );
+
+
       return;
     }
 
+
     await loadImages();
 
-    setUploading(false);
+
+    setUploading(
+      false
+    );
   }
 
+
   // ============================================================
-  // 写真の並び替え
+  // 写真並び替え
   // ============================================================
 
   async function handleMoveImage(
     index: number,
-    direction: "up" | "down"
+
+    direction:
+      | "up"
+      | "down"
   ) {
     const targetIndex =
-      direction === "up"
+      direction ===
+      "up"
         ? index - 1
         : index + 1;
 
-    // これ以上移動できない場合
+
     if (
-      targetIndex < 0 ||
+      targetIndex <
+        0 ||
       targetIndex >=
         images.length
     ) {
       return;
     }
 
+
     const currentImage =
-      images[index];
+      images[
+        index
+      ];
+
 
     const targetImage =
-      images[targetIndex];
+      images[
+        targetIndex
+      ];
+
 
     setMovingImageId(
       currentImage.id
     );
 
-    // 現在画像と隣の画像の
-    // sort_orderを入れ替える
+
+    // ----------------------------------------------------------
+    // current
+    // ----------------------------------------------------------
+
     const {
       error:
-        currentUpdateError,
+        currentError,
     } =
       await supabase
         .from(
@@ -544,32 +867,44 @@ export default function ProductEditPage() {
         )
         .update({
           sort_order:
-            targetImage.sort_order,
+            targetImage
+              .sort_order,
         })
         .eq(
           "id",
           currentImage.id
         );
 
+
     if (
-      currentUpdateError
+      currentError
     ) {
       console.error(
-        currentUpdateError
+        currentError
       );
+
 
       alert(
-        "写真の並び替えに失敗しました：" +
-          currentUpdateError.message
+        "写真の並び替えに失敗しました。"
       );
 
-      setMovingImageId(null);
+
+      setMovingImageId(
+        null
+      );
+
+
       return;
     }
 
+
+    // ----------------------------------------------------------
+    // target
+    // ----------------------------------------------------------
+
     const {
       error:
-        targetUpdateError,
+        targetError,
     } =
       await supabase
         .from(
@@ -577,92 +912,122 @@ export default function ProductEditPage() {
         )
         .update({
           sort_order:
-            currentImage.sort_order,
+            currentImage
+              .sort_order,
         })
         .eq(
           "id",
           targetImage.id
         );
 
+
     if (
-      targetUpdateError
+      targetError
     ) {
       console.error(
-        targetUpdateError
+        targetError
       );
+
 
       alert(
-        "写真の並び替えに失敗しました：" +
-          targetUpdateError.message
+        "写真の並び替えに失敗しました。"
       );
 
-      setMovingImageId(null);
+
+      setMovingImageId(
+        null
+      );
+
+
       return;
     }
 
+
     await loadImages();
 
-    setMovingImageId(null);
+
+    setMovingImageId(
+      null
+    );
   }
+
 
   // ============================================================
   // 写真削除
   // ============================================================
 
   async function handleDeleteImage(
-    image: ProductImage
+    image:
+      ProductImage
   ) {
     const confirmed =
       window.confirm(
         "この写真を削除しますか？"
       );
 
-    if (!confirmed) {
+
+    if (
+      !confirmed
+    ) {
       return;
     }
+
 
     setDeletingImageId(
       image.id
     );
 
+
     // ----------------------------------------------------------
-    // Storageから削除
+    // Storage
     // ----------------------------------------------------------
 
     const {
-      error: storageError,
+      error:
+        storageError,
     } =
-      await supabase.storage
+      await supabase
+        .storage
         .from(
           "product-images-private"
         )
-        .remove([
-          image.storage_path,
-        ]);
+        .remove(
+          [
+            image.storage_path,
+          ]
+        );
 
-    if (storageError) {
+
+    if (
+      storageError
+    ) {
       console.error(
         storageError
       );
+
 
       alert(
         "画像ファイルを削除できませんでした：" +
           storageError.message
       );
 
+
       setDeletingImageId(
         null
       );
 
+
       return;
     }
 
+
     // ----------------------------------------------------------
-    // DBから削除
+    // DB
     // ----------------------------------------------------------
 
     const {
-      error: databaseError,
+      error:
+        databaseError,
     } =
       await supabase
         .from(
@@ -674,44 +1039,50 @@ export default function ProductEditPage() {
           image.id
         );
 
-    if (databaseError) {
+
+    if (
+      databaseError
+    ) {
       console.error(
         databaseError
       );
+
 
       alert(
         "画像情報を削除できませんでした：" +
           databaseError.message
       );
 
+
       setDeletingImageId(
         null
       );
 
+
       return;
     }
 
+
     // ----------------------------------------------------------
-    // 残った画像のsort_orderを
-    // 0,1,2,3...に整理する
+    // 残り画像の番号整理
     // ----------------------------------------------------------
 
     const remainingImages =
       images.filter(
-        (item) =>
+        (
+          item
+        ) =>
           item.id !==
           image.id
       );
 
-    for (
-      let i = 0;
-      i <
-      remainingImages.length;
-      i++
-    ) {
-      const remainingImage =
-        remainingImages[i];
 
+    for (
+      let index = 0;
+      index <
+      remainingImages.length;
+      index++
+    ) {
       const {
         error:
           reorderError,
@@ -722,12 +1093,15 @@ export default function ProductEditPage() {
           )
           .update({
             sort_order:
-              i,
+              index,
           })
           .eq(
             "id",
-            remainingImage.id
+            remainingImages[
+              index
+            ].id
           );
+
 
       if (
         reorderError
@@ -738,205 +1112,336 @@ export default function ProductEditPage() {
       }
     }
 
+
     await loadImages();
+
 
     setDeletingImageId(
       null
     );
   }
 
+
   // ============================================================
-  // 読み込み中
+  // Loading
   // ============================================================
 
-  if (loading) {
+  if (
+    loading
+  ) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
+
         <div className="mx-auto max-w-4xl px-6 py-10">
           読み込み中...
         </div>
+
       </main>
     );
   }
 
-  // ============================================================
-  // 商品が存在しない
-  // ============================================================
 
-  if (!product) {
+  if (
+    !product
+  ) {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
+
         <div className="mx-auto max-w-4xl px-6 py-10">
-          商品が見つかりません。
+
+          <p>
+            商品が見つかりません。
+          </p>
+
+
+          <button
+            type="button"
+
+            onClick={() =>
+              router.push(
+                `/markets/${marketUuid}`
+              )
+            }
+
+            className="mt-5 text-emerald-400"
+          >
+            ← 販売会へ戻る
+          </button>
+
         </div>
+
       </main>
     );
   }
 
+
+  const processing =
+    saving ||
+    uploading ||
+    deletingImageId !==
+      null ||
+    movingImageId !==
+      null;
+
+
   // ============================================================
-  // 画面
+  // UI
   // ============================================================
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
-      <div className="mx-auto max-w-4xl px-6 py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
 
-        {/* 販売会へ戻る */}
+
+        {/* ====================================================
+            販売会へ戻る
+        ==================================================== */}
+
         <button
+          type="button"
+
+          disabled={
+            processing
+          }
+
           onClick={() =>
             router.push(
               `/markets/${marketUuid}`
             )
           }
-          className="mb-8 text-sm text-slate-400 transition hover:text-white"
+
+          className="mb-8 text-sm text-slate-400 transition hover:text-white disabled:opacity-40"
         >
           ← 販売会へ戻る
         </button>
 
-        {/* タイトル */}
+
+        {/* ====================================================
+            Header
+        ==================================================== */}
+
         <div className="mb-10">
 
           <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
             VRC LIVE MARKET
           </p>
 
-          <h1 className="mt-3 text-4xl font-bold">
+
+          <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
             商品を編集
           </h1>
 
+
           <p className="mt-3 text-slate-400">
-            商品情報と商品写真を管理します。
+            商品情報と商品写真を変更できます。
           </p>
 
         </div>
+
 
         {/* ====================================================
             商品情報
         ==================================================== */}
 
-        <section className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900 p-8">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
 
-          {/* 商品名 */}
-          <div>
+          <h2 className="mb-6 text-2xl font-bold">
+            商品情報
+          </h2>
 
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              商品名
-            </label>
 
-            <input
-              type="text"
-              value={name}
-              onChange={(e) =>
-                setName(
-                  e.target.value
-                )
+          <div className="space-y-6">
+
+
+            {/* 商品名 */}
+
+            <div>
+
+              <label className="mb-2 block text-sm font-semibold text-slate-300">
+                商品名
+              </label>
+
+
+              <input
+                type="text"
+
+                value={
+                  name
+                }
+
+                disabled={
+                  processing
+                }
+
+                onChange={(e) =>
+                  setName(
+                    e.target.value
+                  )
+                }
+
+                placeholder="例：ブラジル産 パイライト"
+
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+              />
+
+            </div>
+
+
+            {/* 価格 */}
+
+            <div>
+
+              <label className="mb-2 block text-sm font-semibold text-slate-300">
+                価格
+              </label>
+
+
+              <input
+                type="number"
+
+                min="0"
+
+                value={
+                  price
+                }
+
+                disabled={
+                  processing
+                }
+
+                onChange={(e) =>
+                  setPrice(
+                    e.target.value
+                  )
+                }
+
+                placeholder="例：4800"
+
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+              />
+
+
+              <p className="mt-2 text-sm text-slate-500">
+                円単位で入力してください。
+              </p>
+
+            </div>
+
+
+            {/* 商品説明 */}
+
+            <div>
+
+              <label className="mb-2 block text-sm font-semibold text-slate-300">
+                商品説明
+              </label>
+
+
+              <textarea
+                value={
+                  description
+                }
+
+                disabled={
+                  processing
+                }
+
+                onChange={(e) =>
+                  setDescription(
+                    e.target.value
+                  )
+                }
+
+                rows={5}
+
+                placeholder="例：結晶面がきれいなパイライトです。"
+
+                className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+              />
+
+            </div>
+
+
+            {/* 初期状態 */}
+
+            <div>
+
+              <label className="mb-2 block text-sm font-semibold text-slate-300">
+                初期状態
+              </label>
+
+
+              <select
+                value={
+                  initialState
+                }
+
+                disabled={
+                  processing
+                }
+
+                onChange={(e) =>
+                  setInitialState(
+                    e.target.value
+                  )
+                }
+
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+              >
+
+                <option value="AVAILABLE">
+                  AVAILABLE - 販売中
+                </option>
+
+                <option value="HOLD">
+                  HOLD - 商談中・取り置き
+                </option>
+
+                <option value="SOLD">
+                  SOLD - 売却済み
+                </option>
+
+              </select>
+
+            </div>
+
+
+            {/* Save */}
+
+            <button
+              type="button"
+
+              onClick={
+                handleSave
               }
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
-            />
 
-          </div>
-
-          {/* 価格 */}
-          <div>
-
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              価格
-            </label>
-
-            <input
-              type="number"
-              min="0"
-              value={price}
-              onChange={(e) =>
-                setPrice(
-                  e.target.value
-                )
+              disabled={
+                processing
               }
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
-            />
 
-          </div>
-
-          {/* 商品説明 */}
-          <div>
-
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              商品説明
-            </label>
-
-            <textarea
-              value={
-                description
-              }
-              onChange={(e) =>
-                setDescription(
-                  e.target.value
-                )
-              }
-              rows={5}
-              className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
-            />
-
-          </div>
-
-          {/* 初期状態 */}
-          <div>
-
-            <label className="mb-2 block text-sm font-medium text-slate-300">
-              初期状態
-            </label>
-
-            <select
-              value={
-                initialState
-              }
-              onChange={(e) =>
-                setInitialState(
-                  e.target.value
-                )
-              }
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500"
+              className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
 
-              <option value="AVAILABLE">
-                AVAILABLE - 販売中
-              </option>
+              {saving
+                ? "保存中..."
+                : "商品情報を保存"}
 
-              <option value="HOLD">
-                HOLD - 商談中・取り置き
-              </option>
-
-              <option value="SOLD">
-                SOLD - 売却済み
-              </option>
-
-            </select>
+            </button>
 
           </div>
 
-          {/* 商品保存 */}
-          <button
-            onClick={
-              handleSave
-            }
-            disabled={
-              saving
-            }
-            className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving
-              ? "保存中..."
-              : "商品情報を保存"}
-          </button>
-
         </section>
+
 
         {/* ====================================================
             商品写真
         ==================================================== */}
 
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-8">
+        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
+
+
+          {/* Header */}
 
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
@@ -946,18 +1451,21 @@ export default function ProductEditPage() {
                 商品写真
               </h2>
 
+
               <p className="mt-2 text-sm text-slate-400">
                 写真の順番はVRChatで表示される順番になります。
               </p>
 
             </div>
 
-            {/* 写真追加 */}
+
+            {/* Upload */}
+
             <label
-              className={`inline-flex cursor-pointer items-center justify-center rounded-xl px-5 py-3 font-semibold transition ${
-                uploading
+              className={`inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold transition ${
+                processing
                   ? "cursor-not-allowed bg-slate-700 text-slate-400"
-                  : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  : "cursor-pointer bg-emerald-500 text-slate-950 hover:bg-emerald-400"
               }`}
             >
 
@@ -965,15 +1473,20 @@ export default function ProductEditPage() {
                 ? "アップロード中..."
                 : "＋ 写真を追加"}
 
+
               <input
                 type="file"
+
                 accept="image/jpeg,image/png,image/webp"
+
+                disabled={
+                  processing
+                }
+
                 onChange={
                   handleImageUpload
                 }
-                disabled={
-                  uploading
-                }
+
                 className="hidden"
               />
 
@@ -981,21 +1494,27 @@ export default function ProductEditPage() {
 
           </div>
 
-          {/* 説明 */}
+
+          {/* Info */}
+
           <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
 
             <p className="text-sm text-slate-400">
               PNG・JPG・JPEG・WebPに対応しています。
             </p>
 
+
             <p className="mt-1 text-sm text-slate-500">
-              元画像は非公開で保存されます。公開時にJPEGへ自動変換します。
+              元画像は非公開で保存され、公開時にVRChat用JPEGへ変換されます。
             </p>
 
           </div>
 
-          {/* 写真なし */}
-          {images.length === 0 ? (
+
+          {/* No image */}
+
+          {images.length ===
+          0 ? (
 
             <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-10 text-center text-slate-500">
               まだ商品写真がありません。
@@ -1003,7 +1522,6 @@ export default function ProductEditPage() {
 
           ) : (
 
-            /* 写真一覧 */
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
               {images.map(
@@ -1016,10 +1534,13 @@ export default function ProductEditPage() {
                     key={
                       image.id
                     }
+
                     className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
                   >
 
-                    {/* 写真 */}
+
+                    {/* Image */}
+
                     <div className="relative aspect-square bg-slate-900">
 
                       {image.preview_url ? (
@@ -1028,9 +1549,12 @@ export default function ProductEditPage() {
                           src={
                             image.preview_url
                           }
+
                           alt={`商品写真 ${
-                            index + 1
+                            index +
+                            1
                           }`}
+
                           className="h-full w-full object-contain"
                         />
 
@@ -1042,7 +1566,7 @@ export default function ProductEditPage() {
 
                       )}
 
-                      {/* 写真番号 */}
+
                       <div className="absolute left-3 top-3 rounded-lg bg-black/70 px-3 py-1 text-sm font-semibold">
                         写真{" "}
                         {index + 1}
@@ -1050,60 +1574,58 @@ export default function ProductEditPage() {
 
                     </div>
 
-                    {/* 操作 */}
+
+                    {/* Actions */}
+
                     <div className="space-y-3 p-4">
 
-                      <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        表示順{" "}
+                        {index + 1}
+                      </p>
 
-                        <div>
 
-                          <p className="text-sm font-medium">
-                            表示順{" "}
-                            {index + 1}
-                          </p>
-
-                          <p className="mt-1 text-xs text-slate-500">
-                            非公開
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                      {/* 並び替え */}
                       <div className="grid grid-cols-2 gap-2">
 
                         <button
+                          type="button"
+
                           onClick={() =>
                             handleMoveImage(
                               index,
                               "up"
                             )
                           }
+
                           disabled={
-                            index === 0 ||
-                            movingImageId !==
-                              null
+                            processing ||
+                            index ===
+                              0
                           }
+
                           className="rounded-lg border border-slate-700 px-3 py-2 text-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
                         >
                           ← 前へ
                         </button>
 
+
                         <button
+                          type="button"
+
                           onClick={() =>
                             handleMoveImage(
                               index,
                               "down"
                             )
                           }
+
                           disabled={
+                            processing ||
                             index ===
                               images.length -
-                                1 ||
-                            movingImageId !==
-                              null
+                                1
                           }
+
                           className="rounded-lg border border-slate-700 px-3 py-2 text-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
                         >
                           次へ →
@@ -1111,19 +1633,20 @@ export default function ProductEditPage() {
 
                       </div>
 
-                      {/* 削除 */}
+
                       <button
+                        type="button"
+
                         onClick={() =>
                           handleDeleteImage(
                             image
                           )
                         }
+
                         disabled={
-                          deletingImageId ===
-                            image.id ||
-                          movingImageId !==
-                            null
+                          processing
                         }
+
                         className="w-full rounded-lg border border-red-900 px-3 py-2 text-sm text-red-400 transition hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-50"
                       >
 
