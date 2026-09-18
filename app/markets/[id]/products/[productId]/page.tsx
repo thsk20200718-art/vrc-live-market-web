@@ -12,7 +12,9 @@ import {
   useRouter,
 } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/client";
+import {
+  createClient,
+} from "@/lib/supabase/client";
 
 
 // ============================================================
@@ -28,7 +30,6 @@ type Product = {
   initial_state: string;
   sort_order: number;
 };
-
 
 type ProductImage = {
   id: string;
@@ -57,7 +58,6 @@ export default function ProductEditPage() {
         createClient()
     );
 
-
   const marketUuid =
     params.id as string;
 
@@ -65,9 +65,9 @@ export default function ProductEditPage() {
     params.productId as string;
 
 
-  // ============================================================
+  // ==========================================================
   // 商品情報
-  // ============================================================
+  // ==========================================================
 
   const [
     product,
@@ -77,13 +77,11 @@ export default function ProductEditPage() {
       null
     );
 
-
   const [
     name,
     setName,
   ] =
     useState("");
-
 
   const [
     price,
@@ -91,13 +89,11 @@ export default function ProductEditPage() {
   ] =
     useState("");
 
-
   const [
     description,
     setDescription,
   ] =
     useState("");
-
 
   const [
     initialState,
@@ -108,9 +104,9 @@ export default function ProductEditPage() {
     );
 
 
-  // ============================================================
+  // ==========================================================
   // 商品画像
-  // ============================================================
+  // ==========================================================
 
   const [
     images,
@@ -121,9 +117,9 @@ export default function ProductEditPage() {
     );
 
 
-  // ============================================================
+  // ==========================================================
   // 状態
-  // ============================================================
+  // ==========================================================
 
   const [
     loading,
@@ -131,20 +127,17 @@ export default function ProductEditPage() {
   ] =
     useState(true);
 
-
   const [
     saving,
     setSaving,
   ] =
     useState(false);
 
-
   const [
     uploading,
     setUploading,
   ] =
     useState(false);
-
 
   const [
     deletingImageId,
@@ -153,7 +146,6 @@ export default function ProductEditPage() {
     useState<string | null>(
       null
     );
-
 
   const [
     movingImageId,
@@ -164,9 +156,9 @@ export default function ProductEditPage() {
     );
 
 
-  // ============================================================
+  // ==========================================================
   // 商品画像読み込み
-  // ============================================================
+  // ==========================================================
 
   const loadImages =
     useCallback(
@@ -200,6 +192,7 @@ export default function ProductEditPage() {
           imageError
         ) {
           console.error(
+            "Image load error:",
             imageError
           );
 
@@ -213,19 +206,21 @@ export default function ProductEditPage() {
 
 
         const loadedImages =
-          imageData ?? [];
+          (
+            imageData ??
+            []
+          ) as ProductImage[];
 
 
-        // --------------------------------------------------------
+        // ------------------------------------------------------
         // private StorageなのでSigned URLを作る
-        // --------------------------------------------------------
+        // ------------------------------------------------------
 
         const imagesWithPreview =
           await Promise.all(
             loadedImages.map(
               async (
-                image:
-                  ProductImage
+                image
               ) => {
                 const {
                   data,
@@ -246,6 +241,7 @@ export default function ProductEditPage() {
                   error
                 ) {
                   console.error(
+                    "Signed URL error:",
                     error
                   );
 
@@ -276,9 +272,9 @@ export default function ProductEditPage() {
     );
 
 
-  // ============================================================
+  // ==========================================================
   // 商品読み込み
-  // ============================================================
+  // ==========================================================
 
   useEffect(
     () => {
@@ -312,6 +308,7 @@ export default function ProductEditPage() {
           error
         ) {
           console.error(
+            "Product load error:",
             error
           );
 
@@ -332,7 +329,7 @@ export default function ProductEditPage() {
 
 
         setProduct(
-          data
+          data as Product
         );
 
 
@@ -369,7 +366,6 @@ export default function ProductEditPage() {
 
 
       loadProduct();
-
     },
 
     [
@@ -381,9 +377,9 @@ export default function ProductEditPage() {
   );
 
 
-  // ============================================================
+  // ==========================================================
   // 商品情報保存
-  // ============================================================
+  // ==========================================================
 
   async function handleSave() {
     if (
@@ -466,6 +462,7 @@ export default function ProductEditPage() {
       error
     ) {
       console.error(
+        "Product save error:",
         error
       );
 
@@ -511,9 +508,9 @@ export default function ProductEditPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // 画像追加
-  // ============================================================
+  // ==========================================================
 
   async function handleImageUpload(
     event:
@@ -579,9 +576,9 @@ export default function ProductEditPage() {
     );
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // User
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       data:
@@ -590,7 +587,8 @@ export default function ProductEditPage() {
       error:
         userError,
     } =
-      await supabase.auth
+      await supabase
+        .auth
         .getUser();
 
 
@@ -599,6 +597,7 @@ export default function ProductEditPage() {
       !userData.user
     ) {
       console.error(
+        "User error:",
         userError
       );
 
@@ -621,9 +620,9 @@ export default function ProductEditPage() {
       userData.user.id;
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // 拡張子
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     let extension =
       "jpg";
@@ -647,9 +646,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // Storage path
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const randomId =
       crypto.randomUUID();
@@ -663,9 +662,9 @@ export default function ProductEditPage() {
       `${userId}/${productUuid}/${fileName}`;
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // Storage upload
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -696,6 +695,7 @@ export default function ProductEditPage() {
       uploadError
     ) {
       console.error(
+        "Image upload error:",
         uploadError
       );
 
@@ -715,9 +715,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // 次のsort_order
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     let nextSortOrder =
       0;
@@ -739,9 +739,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // DB登録
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -767,11 +767,11 @@ export default function ProductEditPage() {
       insertError
     ) {
       console.error(
+        "Image insert error:",
         insertError
       );
 
 
-      // DB登録失敗ならStorageを戻す
       await supabase
         .storage
         .from(
@@ -808,9 +808,9 @@ export default function ProductEditPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // 写真並び替え
-  // ============================================================
+  // ==========================================================
 
   async function handleMoveImage(
     index: number,
@@ -853,9 +853,9 @@ export default function ProductEditPage() {
     );
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // current
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -880,6 +880,7 @@ export default function ProductEditPage() {
       currentError
     ) {
       console.error(
+        "Move current image error:",
         currentError
       );
 
@@ -898,9 +899,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // target
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -925,6 +926,7 @@ export default function ProductEditPage() {
       targetError
     ) {
       console.error(
+        "Move target image error:",
         targetError
       );
 
@@ -952,9 +954,9 @@ export default function ProductEditPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // 写真削除
-  // ============================================================
+  // ==========================================================
 
   async function handleDeleteImage(
     image:
@@ -978,9 +980,9 @@ export default function ProductEditPage() {
     );
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // Storage
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -1002,6 +1004,7 @@ export default function ProductEditPage() {
       storageError
     ) {
       console.error(
+        "Storage delete error:",
         storageError
       );
 
@@ -1021,9 +1024,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // DB
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const {
       error:
@@ -1044,6 +1047,7 @@ export default function ProductEditPage() {
       databaseError
     ) {
       console.error(
+        "Image DB delete error:",
         databaseError
       );
 
@@ -1063,9 +1067,9 @@ export default function ProductEditPage() {
     }
 
 
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
     // 残り画像の番号整理
-    // ----------------------------------------------------------
+    // --------------------------------------------------------
 
     const remainingImages =
       images.filter(
@@ -1107,6 +1111,7 @@ export default function ProductEditPage() {
         reorderError
       ) {
         console.error(
+          "Image reorder error:",
           reorderError
         );
       }
@@ -1122,9 +1127,9 @@ export default function ProductEditPage() {
   }
 
 
-  // ============================================================
+  // ==========================================================
   // Loading
-  // ============================================================
+  // ==========================================================
 
   if (
     loading
@@ -1132,7 +1137,7 @@ export default function ProductEditPage() {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
 
-        <div className="mx-auto max-w-4xl px-6 py-10">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
           読み込み中...
         </div>
 
@@ -1147,7 +1152,7 @@ export default function ProductEditPage() {
     return (
       <main className="min-h-screen bg-slate-950 text-white">
 
-        <div className="mx-auto max-w-4xl px-6 py-10">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
 
           <p>
             商品が見つかりません。
@@ -1163,7 +1168,7 @@ export default function ProductEditPage() {
               )
             }
 
-            className="mt-5 text-emerald-400"
+            className="mt-5 min-h-12 touch-manipulation text-emerald-400"
           >
             ← 販売会へ戻る
           </button>
@@ -1184,14 +1189,14 @@ export default function ProductEditPage() {
       null;
 
 
-  // ============================================================
+  // ==========================================================
   // UI
-  // ============================================================
+  // ==========================================================
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
 
 
         {/* ====================================================
@@ -1211,7 +1216,7 @@ export default function ProductEditPage() {
             )
           }
 
-          className="mb-8 text-sm text-slate-400 transition hover:text-white disabled:opacity-40"
+          className="mb-6 min-h-11 touch-manipulation text-sm text-slate-400 transition hover:text-white active:text-white disabled:opacity-40 sm:mb-8"
         >
           ← 販売会へ戻る
         </button>
@@ -1221,19 +1226,19 @@ export default function ProductEditPage() {
             Header
         ==================================================== */}
 
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
 
-          <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
+          <p className="text-xs font-semibold tracking-[0.2em] text-emerald-400 sm:text-sm sm:tracking-[0.25em]">
             VRC LIVE MARKET
           </p>
 
 
-          <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
+          <h1 className="mt-3 text-2xl font-bold sm:text-4xl">
             商品を編集
           </h1>
 
 
-          <p className="mt-3 text-slate-400">
+          <p className="mt-2 text-sm leading-relaxed text-slate-400 sm:mt-3 sm:text-base">
             商品情報と商品写真を変更できます。
           </p>
 
@@ -1244,11 +1249,20 @@ export default function ProductEditPage() {
             商品情報
         ==================================================== */}
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-8">
 
-          <h2 className="mb-6 text-2xl font-bold">
-            商品情報
-          </h2>
+          <div className="mb-6">
+
+            <h2 className="text-xl font-bold sm:text-2xl">
+              商品情報
+            </h2>
+
+
+            <p className="mt-1 text-sm text-slate-500">
+              VRChat上に表示する商品情報です。
+            </p>
+
+          </div>
 
 
           <div className="space-y-6">
@@ -1282,7 +1296,7 @@ export default function ProductEditPage() {
 
                 placeholder="例：ブラジル産 パイライト"
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none transition focus:border-emerald-500 disabled:opacity-50"
               />
 
             </div>
@@ -1297,29 +1311,40 @@ export default function ProductEditPage() {
               </label>
 
 
-              <input
-                type="number"
+              <div className="relative">
 
-                min="0"
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                  ¥
+                </span>
 
-                value={
-                  price
-                }
 
-                disabled={
-                  processing
-                }
+                <input
+                  type="number"
 
-                onChange={(e) =>
-                  setPrice(
-                    e.target.value
-                  )
-                }
+                  inputMode="numeric"
 
-                placeholder="例：4800"
+                  min="0"
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
-              />
+                  value={
+                    price
+                  }
+
+                  disabled={
+                    processing
+                  }
+
+                  onChange={(e) =>
+                    setPrice(
+                      e.target.value
+                    )
+                  }
+
+                  placeholder="4800"
+
+                  className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-9 pr-4 text-base outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                />
+
+              </div>
 
 
               <p className="mt-2 text-sm text-slate-500">
@@ -1353,11 +1378,11 @@ export default function ProductEditPage() {
                   )
                 }
 
-                rows={5}
+                rows={6}
 
                 placeholder="例：結晶面がきれいなパイライトです。"
 
-                className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                className="w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base leading-relaxed outline-none transition focus:border-emerald-500 disabled:opacity-50"
               />
 
             </div>
@@ -1387,7 +1412,7 @@ export default function ProductEditPage() {
                   )
                 }
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base outline-none transition focus:border-emerald-500 disabled:opacity-50"
               >
 
                 <option value="AVAILABLE">
@@ -1403,6 +1428,11 @@ export default function ProductEditPage() {
                 </option>
 
               </select>
+
+
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                販売会を開始したときの商品状態として使用されます。
+              </p>
 
             </div>
 
@@ -1420,7 +1450,7 @@ export default function ProductEditPage() {
                 processing
               }
 
-              className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-12 w-full touch-manipulation rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 active:scale-[0.99] active:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
 
               {saving
@@ -1438,21 +1468,30 @@ export default function ProductEditPage() {
             商品写真
         ==================================================== */}
 
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:mt-8 sm:p-8">
 
 
           {/* Header */}
 
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
-              <h2 className="text-2xl font-bold">
-                商品写真
-              </h2>
+              <div className="flex items-center gap-3">
+
+                <h2 className="text-xl font-bold sm:text-2xl">
+                  商品写真
+                </h2>
 
 
-              <p className="mt-2 text-sm text-slate-400">
+                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+                  {images.length}枚
+                </span>
+
+              </div>
+
+
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">
                 写真の順番はVRChatで表示される順番になります。
               </p>
 
@@ -1462,10 +1501,10 @@ export default function ProductEditPage() {
             {/* Upload */}
 
             <label
-              className={`inline-flex items-center justify-center rounded-xl px-5 py-3 font-semibold transition ${
+              className={`flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl px-5 py-3 font-semibold transition sm:w-auto ${
                 processing
                   ? "cursor-not-allowed bg-slate-700 text-slate-400"
-                  : "cursor-pointer bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+                  : "cursor-pointer bg-emerald-500 text-slate-950 hover:bg-emerald-400 active:scale-[0.99] active:bg-emerald-400"
               }`}
             >
 
@@ -1504,8 +1543,8 @@ export default function ProductEditPage() {
             </p>
 
 
-            <p className="mt-1 text-sm text-slate-500">
-              元画像は非公開で保存され、公開時にVRChat用JPEGへ変換されます。
+            <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">
+              元画像は非公開で保存され、公開時にVRChat用JPEGへ自動変換されます。
             </p>
 
           </div>
@@ -1516,152 +1555,209 @@ export default function ProductEditPage() {
           {images.length ===
           0 ? (
 
-            <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-10 text-center text-slate-500">
-              まだ商品写真がありません。
+            <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-8 text-center sm:p-10">
+
+              <p className="font-medium text-slate-400">
+                まだ商品写真がありません。
+              </p>
+
+
+              <p className="mt-2 text-sm text-slate-500">
+                「＋ 写真を追加」から登録してください。
+              </p>
+
             </div>
 
           ) : (
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
               {images.map(
                 (
                   image,
                   index
-                ) => (
+                ) => {
 
-                  <div
-                    key={
-                      image.id
-                    }
-
-                    className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950"
-                  >
+                  const isMoving =
+                    movingImageId ===
+                    image.id;
 
 
-                    {/* Image */}
+                  const isDeleting =
+                    deletingImageId ===
+                    image.id;
 
-                    <div className="relative aspect-square bg-slate-900">
 
-                      {image.preview_url ? (
+                  return (
 
-                        <img
-                          src={
-                            image.preview_url
-                          }
+                    <div
+                      key={
+                        image.id
+                      }
 
-                          alt={`商品写真 ${
-                            index +
-                            1
-                          }`}
+                      className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950"
+                    >
 
-                          className="h-full w-full object-contain"
-                        />
 
-                      ) : (
+                      {/* Image */}
 
-                        <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                          プレビューできません
+                      <div className="relative aspect-square bg-slate-900">
+
+                        {image.preview_url ? (
+
+                          <img
+                            src={
+                              image.preview_url
+                            }
+
+                            alt={`商品写真 ${
+                              index +
+                              1
+                            }`}
+
+                            className="h-full w-full object-contain"
+                          />
+
+                        ) : (
+
+                          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500">
+                            プレビューできません
+                          </div>
+
+                        )}
+
+
+                        <div className="absolute left-3 top-3 rounded-lg bg-black/75 px-3 py-1.5 text-sm font-semibold backdrop-blur-sm">
+                          写真{" "}
+                          {index + 1}
                         </div>
 
-                      )}
+
+                        {index ===
+                          0 && (
+
+                          <div className="absolute right-3 top-3 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950">
+                            先頭
+                          </div>
+
+                        )}
 
 
-                      <div className="absolute left-3 top-3 rounded-lg bg-black/70 px-3 py-1 text-sm font-semibold">
-                        写真{" "}
-                        {index + 1}
+                        {(isMoving ||
+                          isDeleting) && (
+
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+
+                            <div className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold">
+                              {isDeleting
+                                ? "削除中..."
+                                : "並び替え中..."}
+                            </div>
+
+                          </div>
+
+                        )}
+
                       </div>
 
-                    </div>
+
+                      {/* Actions */}
+
+                      <div className="space-y-3 p-4">
+
+                        <div className="flex items-center justify-between">
+
+                          <p className="text-sm font-medium">
+                            表示順
+                          </p>
 
 
-                    {/* Actions */}
+                          <p className="text-sm font-bold text-emerald-400">
+                            {index + 1} / {images.length}
+                          </p>
 
-                    <div className="space-y-3 p-4">
-
-                      <p className="text-sm font-medium">
-                        表示順{" "}
-                        {index + 1}
-                      </p>
+                        </div>
 
 
-                      <div className="grid grid-cols-2 gap-2">
+                        {/* スマホでも押しやすい並び替え */}
+
+                        <div className="grid grid-cols-2 gap-2">
+
+                          <button
+                            type="button"
+
+                            onClick={() =>
+                              handleMoveImage(
+                                index,
+                                "up"
+                              )
+                            }
+
+                            disabled={
+                              processing ||
+                              index ===
+                                0
+                            }
+
+                            className="min-h-12 touch-manipulation rounded-xl border border-slate-700 px-3 py-3 text-sm font-semibold transition hover:bg-slate-800 active:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            ↑ 前へ
+                          </button>
+
+
+                          <button
+                            type="button"
+
+                            onClick={() =>
+                              handleMoveImage(
+                                index,
+                                "down"
+                              )
+                            }
+
+                            disabled={
+                              processing ||
+                              index ===
+                                images.length -
+                                  1
+                            }
+
+                            className="min-h-12 touch-manipulation rounded-xl border border-slate-700 px-3 py-3 text-sm font-semibold transition hover:bg-slate-800 active:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            ↓ 次へ
+                          </button>
+
+                        </div>
+
 
                         <button
                           type="button"
 
                           onClick={() =>
-                            handleMoveImage(
-                              index,
-                              "up"
+                            handleDeleteImage(
+                              image
                             )
                           }
 
                           disabled={
-                            processing ||
-                            index ===
-                              0
+                            processing
                           }
 
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
+                          className="min-h-12 w-full touch-manipulation rounded-xl border border-red-900 px-3 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-950 active:bg-red-950 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          ← 前へ
-                        </button>
 
+                          {isDeleting
+                            ? "削除中..."
+                            : "写真を削除"}
 
-                        <button
-                          type="button"
-
-                          onClick={() =>
-                            handleMoveImage(
-                              index,
-                              "down"
-                            )
-                          }
-
-                          disabled={
-                            processing ||
-                            index ===
-                              images.length -
-                                1
-                          }
-
-                          className="rounded-lg border border-slate-700 px-3 py-2 text-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          次へ →
                         </button>
 
                       </div>
 
-
-                      <button
-                        type="button"
-
-                        onClick={() =>
-                          handleDeleteImage(
-                            image
-                          )
-                        }
-
-                        disabled={
-                          processing
-                        }
-
-                        className="w-full rounded-lg border border-red-900 px-3 py-2 text-sm text-red-400 transition hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-
-                        {deletingImageId ===
-                        image.id
-                          ? "削除中..."
-                          : "写真を削除"}
-
-                      </button>
-
                     </div>
 
-                  </div>
-
-                )
+                  );
+                }
               )}
 
             </div>
@@ -1669,6 +1765,33 @@ export default function ProductEditPage() {
           )}
 
         </section>
+
+
+        {/* ====================================================
+            スマホ用 下部戻るボタン
+        ==================================================== */}
+
+        <div className="mt-8 sm:hidden">
+
+          <button
+            type="button"
+
+            disabled={
+              processing
+            }
+
+            onClick={() =>
+              router.push(
+                `/markets/${marketUuid}`
+              )
+            }
+
+            className="min-h-12 w-full touch-manipulation rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-200 active:bg-slate-800 disabled:opacity-40"
+          >
+            ← 販売会編集へ戻る
+          </button>
+
+        </div>
 
       </div>
 
