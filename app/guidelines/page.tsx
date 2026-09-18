@@ -30,61 +30,140 @@ export default function GuidelinesPage() {
 
         <div className="mt-10 space-y-8">
 
+          {/* ==================================================
+              販売禁止
+          ================================================== */}
+
           <section className="rounded-2xl border border-red-900 bg-red-950/20 p-5 sm:p-6">
             <h2 className="text-xl font-bold text-red-300">
               販売禁止
             </h2>
 
+            <p className="mt-4 leading-relaxed text-slate-300">
+              次の商品・コンテンツについては、
+              VRC Live Marketを利用した販売を行わないでください。
+            </p>
+
             <ul className="mt-4 list-disc space-y-3 pl-6 text-slate-300">
-              <li>法令により販売が禁止されている商品</li>
-              <li>違法薬物その他の違法物品</li>
-              <li>盗品または不正に取得された商品</li>
-              <li>偽造品・模倣品</li>
-              <li>第三者の知的財産権を侵害する商品</li>
-              <li>危険物、爆発物その他安全上問題のある商品</li>
-              <li>法令上必要な許可なく販売される規制対象商品</li>
-              <li>成人向けまたは性的な商品・コンテンツ</li>
-              <li>VRChatの規約に違反する商品・コンテンツ</li>
-              <li>その他、運営者が不適切と判断する商品</li>
+              <li>
+                法令により販売、所持、譲渡等が禁止されている商品
+              </li>
+
+              <li>
+                違法薬物その他の違法な物品
+              </li>
+
+              <li>
+                盗品または不正に取得された商品
+              </li>
+
+              <li>
+                偽造品、模倣品その他第三者の権利を侵害する商品
+              </li>
+
+              <li>
+                武器、危険物、爆発物その他安全上重大な危険を伴う商品
+              </li>
+
+              <li>
+                必要な許可、届出、資格または年齢確認等を行わずに
+                販売される規制対象商品
+              </li>
+
+              <li>
+                医薬品その他、法令上販売方法が規制されている商品を
+                必要な条件を満たさず販売する行為
+              </li>
+
+              <li>
+                成人向けまたは性的な商品・コンテンツ
+              </li>
+
+              <li>
+                犯罪、暴力その他の違法行為を助長する商品・コンテンツ
+              </li>
+
+              <li>
+                第三者の著作権、商標権、肖像権その他の権利を
+                侵害する商品・コンテンツ
+              </li>
+
+              <li>
+                商品の内容、品質、効果、価格、出所等について
+                虚偽または著しく誤解を招く表示を伴う商品
+              </li>
+
+              <li>
+                VRChatその他関連サービスの規約に違反する
+                商品・コンテンツ
+              </li>
+
+              <li>
+                その他、VRC Live Marketの安全な運営上
+                不適切と判断される商品
+              </li>
             </ul>
           </section>
 
 
+          {/* ==================================================
+              取り扱いに注意が必要な商品
+          ================================================== */}
+
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
             <h2 className="text-xl font-bold">
-              鉱物・天然石について
+              取り扱いに注意が必要な商品
             </h2>
 
             <p className="mt-4 leading-relaxed text-slate-300">
-              鉱物、天然石、化石等を販売する場合、
-              採集・所有・輸出入・販売に関する法令や
-              原産国・地域の規制を確認してください。
+              法令により販売、所持、譲渡、輸出入等に
+              許可、届出、資格、年齢確認その他の条件が
+              設けられている商品は、
+              必要な条件を満たさない状態で販売してはいけません。
             </p>
 
             <p className="mt-3 leading-relaxed text-slate-300">
-              放射性物質、有害物質その他
-              人体または環境へ危険を及ぼす可能性がある商品については、
-              本サービス上での販売を行わないでください。
+              また、人体、動物、環境または財産に
+              危険を及ぼす可能性がある商品や、
+              安全性を十分に確認できない商品については、
+              本サービスを利用した販売を行わないでください。
             </p>
           </section>
 
 
+          {/* ==================================================
+              商品情報
+          ================================================== */}
+
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
             <h2 className="text-xl font-bold">
-              商品説明
+              商品情報は正確に表示してください
             </h2>
 
             <p className="mt-4 leading-relaxed text-slate-300">
-              商品の種類、状態、傷、サイズ、加工の有無など、
-              購入判断に重要な情報を正確に説明してください。
+              商品名、価格、状態、サイズ、数量、
+              中古・新品の区別その他購入判断に重要な情報を、
+              できる限り正確に掲載してください。
             </p>
 
             <p className="mt-3 leading-relaxed text-slate-300">
-              科学的・医学的な効果について、
-              十分な根拠がない効能を断定する表示は行わないでください。
+              傷、汚れ、欠損、故障、補修歴その他
+              購入判断に影響する事項がある場合は、
+              購入者に分かるよう説明してください。
+            </p>
+
+            <p className="mt-3 leading-relaxed text-slate-300">
+              商品の性能、効果、品質等について、
+              十分な根拠がない内容を断定的に表示したり、
+              実際より著しく優れていると誤認させる表現は
+              行わないでください。
             </p>
           </section>
 
+
+          {/* ==================================================
+              HOLD
+          ================================================== */}
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
             <h2 className="text-xl font-bold">
@@ -100,11 +179,44 @@ export default function GuidelinesPage() {
             </p>
 
             <p className="mt-3 leading-relaxed text-slate-300">
-              最終的な注文・決済・契約成立については、
+              最終的な注文、決済、購入確定等については、
               販売者が指定する外部販売ページの手続に従ってください。
             </p>
           </section>
 
+
+          {/* ==================================================
+              外部販売ページ
+          ================================================== */}
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
+            <h2 className="text-xl font-bold">
+              注文・決済・配送
+            </h2>
+
+            <p className="mt-4 leading-relaxed text-slate-300">
+              注文、決済、配送先情報の入力等は、
+              適切な外部ECサイトまたは決済サービスを利用して
+              行ってください。
+            </p>
+
+            <p className="mt-3 leading-relaxed text-slate-300">
+              販売者は、自ら利用する販売ページ上で、
+              商品価格、送料、支払方法、発送時期、
+              返品・交換・キャンセル条件その他必要な取引条件を
+              適切に表示してください。
+            </p>
+
+            <p className="mt-3 leading-relaxed text-slate-300">
+              法令上、表示や許可等が必要となる場合は、
+              販売者自身の責任で対応してください。
+            </p>
+          </section>
+
+
+          {/* ==================================================
+              個人情報
+          ================================================== */}
 
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
             <h2 className="text-xl font-bold">
@@ -113,7 +225,7 @@ export default function GuidelinesPage() {
 
             <p className="mt-4 leading-relaxed text-slate-300">
               VRChat上で購入者の住所、電話番号、
-              クレジットカード情報その他の
+              クレジットカード情報、パスワードその他の
               秘密性の高い情報を聞き出さないでください。
             </p>
 
@@ -124,9 +236,13 @@ export default function GuidelinesPage() {
           </section>
 
 
+          {/* ==================================================
+              VRChat
+          ================================================== */}
+
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
             <h2 className="text-xl font-bold">
-              VRChatでの行動
+              VRChatでの利用
             </h2>
 
             <p className="mt-4 leading-relaxed text-slate-300">
@@ -136,8 +252,59 @@ export default function GuidelinesPage() {
               Creator Guidelinesその他適用されるルールを
               遵守してください。
             </p>
+
+            <p className="mt-3 leading-relaxed text-slate-300">
+              他の利用者への迷惑行為、嫌がらせ、
+              なりすまし、虚偽の説明その他
+              安全な販売イベントの運営を妨げる行為を
+              行ってはいけません。
+            </p>
           </section>
 
+
+          {/* ==================================================
+              アカウント・システム
+          ================================================== */}
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
+            <h2 className="text-xl font-bold">
+              アカウント・システムの利用
+            </h2>
+
+            <p className="mt-4 leading-relaxed text-slate-300">
+              他人のアカウントを無断で使用したり、
+              他人になりすまして販売会を開催してはいけません。
+            </p>
+
+            <p className="mt-3 leading-relaxed text-slate-300">
+              不正アクセス、システムへの過度な負荷、
+              データの不正取得・改ざんその他
+              本サービスの正常な運営を妨げる行為は禁止します。
+            </p>
+          </section>
+
+
+          {/* ==================================================
+              違反時
+          ================================================== */}
+
+          <section className="rounded-2xl border border-amber-900 bg-amber-950/20 p-5 sm:p-6">
+            <h2 className="text-xl font-bold text-amber-300">
+              ルールに違反した場合
+            </h2>
+
+            <p className="mt-4 leading-relaxed text-slate-300">
+              禁止商品の販売、本ガイドラインへの違反、
+              その他安全なサービス運営に重大な影響があると判断した場合、
+              販売会の停止、公開停止または
+              本サービスの利用制限を行う場合があります。
+            </p>
+          </section>
+
+
+          {/* ==================================================
+              判断に迷った場合
+          ================================================== */}
 
           <section className="rounded-2xl border border-emerald-900 bg-emerald-950/20 p-5 sm:p-6">
             <h2 className="font-bold text-emerald-300">
@@ -145,8 +312,22 @@ export default function GuidelinesPage() {
             </h2>
 
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              販売してよいか判断できない商品については、
-              販売会を開始する前にVRC Live Market運営へ確認してください。
+              商品や販売方法について、
+              本サービスで取り扱ってよいか判断できない場合は、
+              販売会を開始する前に
+              VRC Live Market運営へ確認してください。
+            </p>
+          </section>
+
+
+          {/* ==================================================
+              非公式表記
+          ================================================== */}
+
+          <section className="border-t border-slate-800 pt-8">
+            <p className="text-sm leading-relaxed text-slate-500">
+              VRC Live Marketは独立して開発されているプロジェクトであり、
+              VRChat Inc.の公式サービスではありません。
             </p>
           </section>
 
