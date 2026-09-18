@@ -601,97 +601,196 @@ export default function MarketEditPage() {
   // ==========================================================
 
   async function handleChangeSaleStatus(
-    nextStatus:
-      SaleStatus
+  nextStatus:
+    SaleStatus
+) {
+  if (
+    !market
   ) {
-    if (
-      !market
-    ) {
-      return;
-    }
+    return;
+  }
 
-    // --------------------------------------------------------
-    // 販売開始は「公開中」のときだけ
-    // --------------------------------------------------------
+  // --------------------------------------------------------
+  // 販売開始は「公開中」のときだけ
+  // --------------------------------------------------------
 
-    if (
-      nextStatus ===
-        "LIVE" &&
-      market.status !==
-        "published"
-    ) {
-      alert(
-        "販売を開始する前に、販売会を公開してください。"
-      );
-
-      return;
-    }
-
-    setChangingSaleStatus(
-      true
+  if (
+    nextStatus ===
+      "LIVE" &&
+    market.status !==
+      "published"
+  ) {
+    alert(
+      "販売を開始する前に、販売会を公開してください。"
     );
 
-    try {
-      const {
-        error,
-      } =
-        await supabase
-          .from(
-            "markets"
-          )
-          .update({
-            sale_status:
-              nextStatus,
+    return;
+  }
 
-            updated_at:
-              new Date()
-                .toISOString(),
-          })
-          .eq(
-            "id",
-            marketUuid
-          );
+  setChangingSaleStatus(
+    true
+  );
 
-      if (
-        error
-      ) {
-        throw error;
-      }
+  try {
+    // ------------------------------------------------------
+    // ログイン情報取得
+    // ------------------------------------------------------
 
-      setMarket(
-        (
-          current
-        ) => {
-          if (
-            !current
-          ) {
-            return current;
-          }
+    const {
+      data:
+        sessionData,
 
-          return {
-            ...current,
-            sale_status:
-              nextStatus,
-          };
+      error:
+        sessionError,
+    } =
+      await supabase.auth
+        .getSession();
+
+    if (
+      sessionError ||
+      !sessionData.session
+    ) {
+      alert(
+        "ログイン情報を確認できませんでした。"
+      );
+
+      return;
+    }
+
+    // ------------------------------------------------------
+    // 販売状態専用APIを呼ぶ
+    //
+    // このAPIが
+    // 1. Supabase
+    // 2. GitHub market.json
+    //
+    // の両方を更新する
+    // ------------------------------------------------------
+
+    const response =
+      await fetch(
+        `/api/markets/${marketUuid}/sale-status`,
+        {
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${sessionData.session.access_token}`,
+          },
+
+          body:
+            JSON.stringify({
+              saleStatus:
+                nextStatus,
+            }),
         }
       );
-    } catch (
-      error
+
+    // ------------------------------------------------------
+    // API応答確認
+    // ------------------------------------------------------
+
+    const contentType =
+      response.headers.get(
+        "content-type"
+      ) ??
+      "";
+
+    if (
+      !contentType.includes(
+        "application/json"
+      )
     ) {
+      const responseText =
+        await response.text();
+
       console.error(
-        "Sale status update error:",
-        error
+        "Sale status API invalid response:",
+        responseText
       );
 
       alert(
-        "販売状態の変更に失敗しました。"
+        "販売状態APIから正しい応答を受け取れませんでした。"
       );
-    } finally {
-      setChangingSaleStatus(
-        false
-      );
+
+      return;
     }
+
+    const result =
+      (
+        await response.json()
+      ) as ApiResponse & {
+        saleStatus?:
+          SaleStatus;
+
+        runtimeUpdated?:
+          boolean;
+      };
+
+    // ------------------------------------------------------
+    // APIエラー
+    // ------------------------------------------------------
+
+    if (
+      !response.ok
+    ) {
+      alert(
+        result.error ??
+          "販売状態の変更に失敗しました。"
+      );
+
+      return;
+    }
+
+    // ------------------------------------------------------
+    // Web画面も新しい状態へ変更
+    // ------------------------------------------------------
+
+    const updatedStatus =
+      result.saleStatus ??
+      nextStatus;
+
+    setMarket(
+      (
+        current
+      ) => {
+        if (
+          !current
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+
+          sale_status:
+            updatedStatus,
+        };
+      }
+    );
+
+  } catch (
+    error
+  ) {
+    console.error(
+      "Sale status update error:",
+      error
+    );
+
+    alert(
+      "販売状態の変更中に通信エラーが発生しました。"
+    );
+
+  } finally {
+    setChangingSaleStatus(
+      false
+    );
   }
+}
 
   // ==========================================================
   // 商品順保存
