@@ -9,6 +9,11 @@ export const dynamic = "force-dynamic";
 // 型
 // ============================================================
 
+type SaleStatus =
+  | "READY"
+  | "LIVE"
+  | "ENDED";
+
 type Market = {
   id: string;
   user_id: string;
@@ -18,6 +23,7 @@ type Market = {
   staff_display_names: string[];
   stream_url: string;
   status: string;
+  sale_status: SaleStatus;
   runtime_slot: number | null;
 };
 
@@ -54,6 +60,7 @@ type RuntimeMarket = {
   staffDisplayNames: string[];
   authorizedDisplayNames: string[];
   streamUrl: string;
+  saleStatus: SaleStatus;
   products: RuntimeProduct[];
 };
 
@@ -378,7 +385,6 @@ async function listGitHubDirectory(
       )}`
     );
 
-  // フォルダがまだ存在しない場合
   if (
     response.status ===
     404
@@ -504,7 +510,6 @@ async function cleanupStaleRuntimeImages(
     const item of
     existingFiles
   ) {
-    // ファイル以外は無視
     if (
       item.type !==
       "file"
@@ -512,12 +517,6 @@ async function cleanupStaleRuntimeImages(
       continue;
     }
 
-    // Runtime画像形式だけを対象にする
-    //
-    // 00.jpg
-    // 01.jpg
-    // ...
-    // 63.jpg
     if (
       !/^\d{2}\.jpg$/i.test(
         item.name
@@ -526,7 +525,6 @@ async function cleanupStaleRuntimeImages(
       continue;
     }
 
-    // 今回も使用中なら残す
     if (
       activeFileNames.has(
         item.name
@@ -550,7 +548,6 @@ async function cleanupStaleRuntimeImages(
 // ============================================================
 // Runtime Slot確保
 //
-// 重要:
 // createClientのReturnTypeを引数型にすると
 // Supabaseの型推論が崩れる場合があるため、
 // この関数内でClientを生成する。
@@ -590,10 +587,6 @@ async function ensureRuntimeSlot(
     attempt < 5;
     attempt++
   ) {
-    // --------------------------------------------------------
-    // 使用済みSlot取得
-    // --------------------------------------------------------
-
     const {
       data:
         usedMarkets,
@@ -639,10 +632,6 @@ async function ensureRuntimeSlot(
       }
     }
 
-    // --------------------------------------------------------
-    // 空きSlot検索
-    // --------------------------------------------------------
-
     let freeSlot:
       number | null =
       null;
@@ -672,10 +661,6 @@ async function ensureRuntimeSlot(
         "VRChat用のRuntime Slotがすべて使用されています。"
       );
     }
-
-    // --------------------------------------------------------
-    // 空いていれば割当
-    // --------------------------------------------------------
 
     const {
       data:
@@ -717,10 +702,6 @@ async function ensureRuntimeSlot(
           .runtime_slot
       );
     }
-
-    // --------------------------------------------------------
-    // 競合した可能性があるため再確認
-    // --------------------------------------------------------
 
     const {
       data:
@@ -990,6 +971,15 @@ export async function POST(
       marketData as Market;
 
     // ========================================================
+    // 販売状態
+    // ========================================================
+
+    const saleStatus:
+      SaleStatus =
+      market.sale_status ??
+      "READY";
+
+    // ========================================================
     // 販売者・スタッフ
     // ========================================================
 
@@ -1013,7 +1003,8 @@ export async function POST(
 
     if (
       sellerDisplayNames
-        .length === 0
+        .length ===
+      0
     ) {
       return (
         NextResponse.json(
@@ -1410,10 +1401,6 @@ export async function POST(
             "0"
           )}.jpg`;
 
-        // ----------------------------------------------------
-        // 今回使用する画像として記録
-        // ----------------------------------------------------
-
         activeImageFileNames.push(
           imageFileName
         );
@@ -1448,25 +1435,6 @@ export async function POST(
 
     // ========================================================
     // 古いRuntime画像を削除
-    //
-    // 例:
-    //
-    // 前回
-    // 00.jpg
-    // 01.jpg
-    // 02.jpg
-    // 03.jpg
-    //
-    // 今回
-    // 00.jpg
-    // 01.jpg
-    //
-    // ↓
-    //
-    // 02.jpg
-    // 03.jpg
-    //
-    // を自動削除する。
     // ========================================================
 
     const deletedStaleImageCount =
@@ -1498,6 +1466,8 @@ export async function POST(
       authorizedDisplayNames,
 
       streamUrl,
+
+      saleStatus,
 
       products:
         runtimeProducts,
@@ -1712,6 +1682,8 @@ export async function POST(
           market.market_id,
 
         runtimeSlot,
+
+        saleStatus,
 
         productCount:
           products.length,
