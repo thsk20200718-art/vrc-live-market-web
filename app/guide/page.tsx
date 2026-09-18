@@ -1,524 +1,624 @@
 import Link from "next/link";
 
+
+// ============================================================
+// 共通ステップ
+// ============================================================
+
+type GuideStepProps = {
+  number: string;
+  title: string;
+  children: React.ReactNode;
+};
+
+
+function GuideStep({
+  number,
+  title,
+  children,
+}: GuideStepProps) {
+  return (
+    <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
+
+      <div className="flex items-start gap-4">
+
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
+          {number}
+        </div>
+
+
+        <div className="min-w-0">
+
+          <h2 className="text-xl font-bold text-white">
+            {title}
+          </h2>
+
+
+          <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-400">
+            {children}
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  );
+}
+
+
+// ============================================================
+// ページ
+// ============================================================
+
 export default function GuidePage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
-
-
-        {/* ====================================================
-            戻る
-        ==================================================== */}
-
-        <Link
-          href="/"
-          className="text-sm text-slate-400 transition hover:text-white"
-        >
-          ← 販売会管理へ戻る
-        </Link>
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
 
 
         {/* ====================================================
             Header
         ==================================================== */}
 
-        <header className="mt-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
-          <p className="text-sm font-semibold tracking-[0.2em] text-emerald-400">
-            VRC LIVE MARKET
-          </p>
+          <div>
 
-
-          <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
-            はじめての方へ
-          </h1>
-
-
-          <p className="mt-4 max-w-2xl leading-relaxed text-slate-400">
-            VRC Live Marketを使って、
-            VRChat上でライブ販売を始めるまでの流れを紹介します。
-          </p>
-
-        </header>
-
-
-        {/* ====================================================
-            全体の流れ
-        ==================================================== */}
-
-        <section className="mt-10 rounded-2xl border border-emerald-900 bg-emerald-950/20 p-5 sm:p-6">
-
-          <p className="text-sm font-semibold text-emerald-300">
-            販売開始までの流れ
-          </p>
-
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-5">
-
-            <div className="rounded-xl bg-slate-900 p-4 text-center">
-              <p className="text-sm text-slate-500">
-                STEP 1
-              </p>
-
-              <p className="mt-1 font-semibold">
-                販売会作成
-              </p>
-            </div>
-
-
-            <div className="rounded-xl bg-slate-900 p-4 text-center">
-              <p className="text-sm text-slate-500">
-                STEP 2
-              </p>
-
-              <p className="mt-1 font-semibold">
-                商品登録
-              </p>
-            </div>
-
-
-            <div className="rounded-xl bg-slate-900 p-4 text-center">
-              <p className="text-sm text-slate-500">
-                STEP 3
-              </p>
-
-              <p className="mt-1 font-semibold">
-                公開
-              </p>
-            </div>
-
-
-            <div className="rounded-xl bg-slate-900 p-4 text-center">
-              <p className="text-sm text-slate-500">
-                STEP 4
-              </p>
-
-              <p className="mt-1 font-semibold">
-                VRChat確認
-              </p>
-            </div>
-
-
-            <div className="rounded-xl bg-slate-900 p-4 text-center">
-              <p className="text-sm text-slate-500">
-                STEP 5
-              </p>
-
-              <p className="mt-1 font-semibold">
-                販売開始
-              </p>
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ====================================================
-            STEP 1
-        ==================================================== */}
-
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
-
-          <div className="flex items-center gap-3">
-
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
-              1
-            </span>
-
-
-            <h2 className="text-xl font-bold">
-              販売会を作成
-            </h2>
-
-          </div>
-
-
-          <p className="mt-5 leading-relaxed text-slate-300">
-            ダッシュボードの
-            「新しい販売会を作る」から販売会を作成します。
-          </p>
-
-
-          <div className="mt-4 rounded-xl bg-slate-950 p-4">
-
-            <p className="text-sm font-semibold">
-              主に設定するもの
+            <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
+              VRC LIVE MARKET
             </p>
 
 
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-400">
-              <li>販売会名</li>
-              <li>VRChatの販売者Display Name</li>
-              <li>スタッフのDisplay Name</li>
-              <li>ライブ配信URL</li>
-            </ul>
-
-          </div>
-
-        </section>
+            <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
+              はじめての使い方
+            </h1>
 
 
-        {/* ====================================================
-            STEP 2
-        ==================================================== */}
-
-        <section className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
-
-          <div className="flex items-center gap-3">
-
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
-              2
-            </span>
-
-
-            <h2 className="text-xl font-bold">
-              商品を登録
-            </h2>
-
-          </div>
-
-
-          <p className="mt-5 leading-relaxed text-slate-300">
-            販売する商品を登録します。
-          </p>
-
-
-          <div className="mt-4 rounded-xl bg-slate-950 p-4">
-
-            <p className="text-sm font-semibold">
-              商品に登録できる情報
-            </p>
-
-
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-400">
-              <li>商品名</li>
-              <li>価格</li>
-              <li>説明</li>
-              <li>商品写真</li>
-              <li>初期状態</li>
-            </ul>
-
-          </div>
-
-
-          <p className="mt-4 text-sm leading-relaxed text-slate-400">
-            商品はあとから編集・削除・並び替えできます。
-          </p>
-
-        </section>
-
-
-        {/* ====================================================
-            STEP 3
-        ==================================================== */}
-
-        <section className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
-
-          <div className="flex items-center gap-3">
-
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
-              3
-            </span>
-
-
-            <h2 className="text-xl font-bold">
-              販売会を公開
-            </h2>
-
-          </div>
-
-
-          <p className="mt-5 leading-relaxed text-slate-300">
-            商品登録が終わったら、
-            販売会管理画面の「販売会を公開」を押します。
-          </p>
-
-
-          <p className="mt-3 leading-relaxed text-slate-400">
-            公開すると、
-            VRChatから販売会の商品情報を読み込める状態になります。
-          </p>
-
-
-          <div className="mt-4 rounded-xl border border-amber-900 bg-amber-950/20 p-4">
-
-            <p className="text-sm font-semibold text-amber-300">
-              公開＝販売開始ではありません
-            </p>
-
-
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              「公開中」でも販売状態が「販売前」であれば、
-              まだライブ販売は開始されません。
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400">
+              VRC Live Marketでは、
+              Web画面で販売会や商品を登録し、
+              VRChat上で商品紹介・HOLD・SOLD管理を行えます。
             </p>
 
           </div>
 
-        </section>
-
-
-        {/* ====================================================
-            STEP 4
-        ==================================================== */}
-
-        <section className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
-
-          <div className="flex items-center gap-3">
-
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
-              4
-            </span>
-
-
-            <h2 className="text-xl font-bold">
-              VRChatで確認
-            </h2>
-
-          </div>
-
-
-          <p className="mt-5 leading-relaxed text-slate-300">
-            VRC Live Market対応ワールドへ入り、
-            商品情報が正しく表示されているか確認します。
-          </p>
-
-
-          <div className="mt-4 rounded-xl bg-slate-950 p-4">
-
-            <p className="text-sm font-semibold">
-              確認ポイント
-            </p>
-
-
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-400">
-              <li>販売会名</li>
-              <li>商品名</li>
-              <li>価格</li>
-              <li>説明</li>
-              <li>商品写真</li>
-              <li>販売者・スタッフの操作パネル</li>
-            </ul>
-
-          </div>
-
-
-          <p className="mt-4 text-sm leading-relaxed text-slate-400">
-            販売前はライブ配信は再生されず、
-            購入者側には販売開始前の案内が表示されます。
-          </p>
-
-        </section>
-
-
-        {/* ====================================================
-            STEP 5
-        ==================================================== */}
-
-        <section className="mt-5 rounded-2xl border border-emerald-900 bg-emerald-950/20 p-5 sm:p-7">
-
-          <div className="flex items-center gap-3">
-
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 font-bold text-slate-950">
-              5
-            </span>
-
-
-            <h2 className="text-xl font-bold">
-              販売開始
-            </h2>
-
-          </div>
-
-
-          <p className="mt-5 leading-relaxed text-slate-300">
-            準備ができたら、
-            Web管理画面から「販売開始」を押します。
-          </p>
-
-
-          <div className="mt-4 space-y-3">
-
-            <div className="rounded-xl bg-slate-950 p-4">
-
-              <p className="font-semibold text-emerald-400">
-                READY → LIVE
-              </p>
-
-
-              <p className="mt-2 text-sm text-slate-400">
-                VRChat側も自動で販売中へ切り替わります。
-              </p>
-
-            </div>
-
-
-            <div className="rounded-xl bg-slate-950 p-4">
-
-              <p className="font-semibold">
-                配信開始
-              </p>
-
-
-              <p className="mt-2 text-sm text-slate-400">
-                販売中になるとライブ配信が自動で再生されます。
-              </p>
-
-            </div>
-
-
-            <div className="rounded-xl bg-slate-950 p-4">
-
-              <p className="font-semibold">
-                商品状態を操作
-              </p>
-
-
-              <p className="mt-2 text-sm text-slate-400">
-                販売中のみAVAILABLE・HOLD・SOLDを操作できます。
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* ====================================================
-            販売終了
-        ==================================================== */}
-
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
-
-          <h2 className="text-xl font-bold">
-            販売会が終わったら
-          </h2>
-
-
-          <p className="mt-4 leading-relaxed text-slate-300">
-            Web管理画面の「販売終了」を押します。
-          </p>
-
-
-          <div className="mt-4 rounded-xl bg-slate-950 p-4">
-
-            <p className="font-semibold text-amber-300">
-              LIVE → ENDED
-            </p>
-
-
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              VRChat側には販売終了の案内が表示され、
-              ライブ配信も停止します。
-            </p>
-
-          </div>
-
-
-          <p className="mt-4 text-sm leading-relaxed text-slate-400">
-            同じ販売会を再利用する場合は、
-            「販売前に戻す」を押して次回の販売に備えることができます。
-          </p>
-
-        </section>
-
-
-        {/* ====================================================
-            HOLD説明
-        ==================================================== */}
-
-        <section className="mt-8 rounded-2xl border border-amber-900 bg-amber-950/20 p-5 sm:p-6">
-
-          <h2 className="font-bold text-amber-300">
-            HOLDについて
-          </h2>
-
-
-          <p className="mt-3 text-sm leading-relaxed text-slate-300">
-            HOLDはライブ販売中の一時的な取り置き表示です。
-          </p>
-
-
-          <p className="mt-2 text-sm font-semibold text-amber-300">
-            HOLDだけでは購入確定・売買契約成立にはなりません。
-          </p>
-
-
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            実際の注文・決済は販売者が指定する外部販売ページで行ってください。
-          </p>
-
-        </section>
-
-
-        {/* ====================================================
-            Legal
-        ==================================================== */}
-
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6">
-
-          <h2 className="font-bold">
-            利用前に確認してください
-          </h2>
-
-
-          <div className="mt-4 flex flex-col gap-3 text-sm">
-
-            <Link
-              href="/terms"
-              className="text-emerald-400 transition hover:text-emerald-300"
-            >
-              利用規約 →
-            </Link>
-
-
-            <Link
-              href="/privacy"
-              className="text-emerald-400 transition hover:text-emerald-300"
-            >
-              プライバシーポリシー →
-            </Link>
-
-
-            <Link
-              href="/guidelines"
-              className="text-emerald-400 transition hover:text-emerald-300"
-            >
-              禁止商品・利用上の注意 →
-            </Link>
-
-          </div>
-
-        </section>
-
-
-        {/* ====================================================
-            開始ボタン
-        ==================================================== */}
-
-        <div className="mt-10">
 
           <Link
             href="/"
 
-            className="flex min-h-14 w-full items-center justify-center rounded-xl bg-emerald-500 px-6 py-4 text-lg font-bold text-slate-950 transition hover:bg-emerald-400 sm:w-auto"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
           >
-            販売会管理へ進む
+            販売会管理へ
           </Link>
 
         </div>
 
 
         {/* ====================================================
+            まず覚える3つ
+        ==================================================== */}
+
+        <section className="mt-8 rounded-2xl border border-emerald-900/60 bg-emerald-950/20 p-5 sm:p-6">
+
+          <h2 className="text-lg font-bold text-emerald-300">
+            まず覚える3つの状態
+          </h2>
+
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+
+              <p className="font-bold text-slate-200">
+                READY
+              </p>
+
+              <p className="mt-2 text-sm text-slate-400">
+                販売前です。
+                VRChatでは「まもなく販売開始」と表示されます。
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl border border-emerald-900 bg-emerald-950/30 p-4">
+
+              <p className="font-bold text-emerald-300">
+                LIVE
+              </p>
+
+              <p className="mt-2 text-sm text-slate-400">
+                販売中です。
+                商品状態の変更や購入案内を行います。
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+
+              <p className="font-bold text-slate-200">
+                ENDED
+              </p>
+
+              <p className="mt-2 text-sm text-slate-400">
+                販売終了です。
+                VRChatでは販売終了案内が表示されます。
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        {/* ====================================================
+            Steps
+        ==================================================== */}
+
+        <div className="mt-8 space-y-5">
+
+
+          <GuideStep
+            number="1"
+            title="販売会を作る"
+          >
+
+            <p>
+              販売会管理画面から
+              「販売会を作成」を押します。
+            </p>
+
+
+            <p>
+              販売会タイトル、
+              VRChat上で操作する販売者名、
+              必要に応じてスタッフ名や配信URLを設定します。
+            </p>
+
+
+            <div className="rounded-xl bg-slate-950 p-4">
+
+              <p className="font-semibold text-slate-300">
+                VRChat表示名について
+              </p>
+
+              <p className="mt-2">
+                販売者・スタッフとして操作する人の
+                VRChat Display Nameを正確に入力してください。
+              </p>
+
+            </div>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="2"
+            title="商品を登録する"
+          >
+
+            <p>
+              作成した販売会を開き、
+              商品を追加します。
+            </p>
+
+
+            <p>
+              商品名、価格、説明、画像などを登録してください。
+            </p>
+
+
+            <p>
+              商品画像は、
+              公開時にVRChat向けの形式へ自動変換されます。
+            </p>
+
+
+            <div className="rounded-xl bg-slate-950 p-4">
+
+              <p className="font-semibold text-slate-300">
+                おすすめ
+              </p>
+
+              <p className="mt-2">
+                実際の販売順に商品を並べておくと、
+                VRChat内での進行がかなり楽になります。
+              </p>
+
+            </div>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="3"
+            title="販売会を公開する"
+          >
+
+            <p>
+              商品登録が終わったら、
+              販売会ページから「公開」を行います。
+            </p>
+
+
+            <p>
+              公開すると、
+              VRChatから読み込むためのデータが生成されます。
+            </p>
+
+
+            <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-4">
+
+              <p className="font-semibold text-amber-300">
+                公開前に確認
+              </p>
+
+              <p className="mt-2">
+                商品名、価格、画像、販売者名、
+                配信URLに間違いがないか確認してください。
+              </p>
+
+            </div>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="4"
+            title="VRChatで確認する"
+          >
+
+            <p>
+              VRChatのVRC Live Market対応ワールドへ入り、
+              登録した販売会が正しく表示されるか確認します。
+            </p>
+
+
+            <p>
+              販売開始前は
+              READY状態になっています。
+            </p>
+
+
+            <div className="rounded-xl bg-slate-950 p-4">
+
+              <p className="font-semibold text-slate-300">
+                確認するもの
+              </p>
+
+              <ul className="mt-3 list-disc space-y-2 pl-5">
+                <li>販売会タイトル</li>
+                <li>商品名</li>
+                <li>価格</li>
+                <li>商品画像</li>
+                <li>商品順</li>
+                <li>販売者として操作できるか</li>
+              </ul>
+
+            </div>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="5"
+            title="販売を開始する"
+          >
+
+            <p>
+              Webの販売会画面から
+              「販売開始」を押します。
+            </p>
+
+
+            <p>
+              状態が
+              READY → LIVE
+              に切り替わり、
+              VRChat側にも自動で反映されます。
+            </p>
+
+
+            <p>
+              配信URLを登録している場合は、
+              LIVE開始時にVRChat側の配信再生も開始されます。
+            </p>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="6"
+            title="商品状態を管理する"
+          >
+
+            <p>
+              販売中は、
+              VRChatから商品の状態を変更できます。
+            </p>
+
+
+            <div className="grid gap-3 sm:grid-cols-3">
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="font-bold text-emerald-300">
+                  AVAILABLE
+                </p>
+
+                <p className="mt-2">
+                  販売可能な状態です。
+                </p>
+
+              </div>
+
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="font-bold text-amber-300">
+                  HOLD
+                </p>
+
+                <p className="mt-2">
+                  購入希望者がいる状態です。
+                </p>
+
+              </div>
+
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="font-bold text-red-300">
+                  SOLD
+                </p>
+
+                <p className="mt-2">
+                  売約済みの状態です。
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-4">
+
+              <p className="font-semibold text-amber-300">
+                HOLDについて
+              </p>
+
+              <p className="mt-2">
+                HOLDは購入契約の成立を意味するものではありません。
+                実際の注文・決済・配送は、
+                販売者が案内する外部サービス等で行ってください。
+              </p>
+
+            </div>
+
+          </GuideStep>
+
+
+          <GuideStep
+            number="7"
+            title="販売を終了する"
+          >
+
+            <p>
+              販売終了時は、
+              Web画面から「販売終了」を押します。
+            </p>
+
+
+            <p>
+              状態が
+              LIVE → ENDED
+              に変わり、
+              VRChat側では販売終了案内が表示されます。
+            </p>
+
+
+            <p>
+              配信も停止します。
+            </p>
+
+
+            <p>
+              再度販売したい場合は、
+              「もう一度販売開始」または
+              「販売前に戻す」を利用してください。
+            </p>
+
+          </GuideStep>
+
+        </div>
+
+
+        {/* ====================================================
+            販売前チェック
+        ==================================================== */}
+
+        <section className="mt-10 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
+
+          <h2 className="text-xl font-bold">
+            販売開始前チェック
+          </h2>
+
+
+          <div className="mt-5 space-y-3 text-sm text-slate-400">
+
+            <p>
+              □ 商品情報に間違いがない
+            </p>
+
+            <p>
+              □ 商品画像が表示されている
+            </p>
+
+            <p>
+              □ 商品の順番が正しい
+            </p>
+
+            <p>
+              □ VRChat上で販売者操作ができる
+            </p>
+
+            <p>
+              □ 配信を使用する場合は映像が確認できる
+            </p>
+
+            <p>
+              □ 注文・決済・配送方法を購入者へ案内できる
+            </p>
+
+          </div>
+
+        </section>
+
+
+        {/* ====================================================
+            Trouble
+        ==================================================== */}
+
+        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
+
+          <h2 className="text-xl font-bold">
+            表示されない・更新されないとき
+          </h2>
+
+
+          <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-400">
+
+            <p>
+              まず販売会が「公開済み」になっているか確認してください。
+            </p>
+
+            <p>
+              VRChat側への反映には少し時間がかかる場合があります。
+            </p>
+
+            <p>
+              VRChat上の商品情報がおかしい場合は、
+              販売会ページの商品情報を確認してから再公開してください。
+            </p>
+
+            <p>
+              状態変更ができない場合は、
+              販売状態がLIVEになっているか確認してください。
+            </p>
+
+          </div>
+
+        </section>
+
+
+        {/* ====================================================
+            Rules
+        ==================================================== */}
+
+        <section className="mt-8 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-5 sm:p-7">
+
+          <h2 className="text-lg font-bold text-amber-300">
+            販売について
+          </h2>
+
+
+          <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-400">
+
+            <p>
+              VRC Live Marketは、
+              商品紹介やライブ販売を支援するシステムです。
+            </p>
+
+
+            <p>
+              商品の販売者、決済事業者、配送事業者ではありません。
+            </p>
+
+
+            <p>
+              商品内容、価格、在庫、注文、決済、配送、
+              返品・返金などについては販売者が管理してください。
+            </p>
+
+          </div>
+
+
+          <div className="mt-5 flex flex-wrap gap-3">
+
+            <Link
+              href="/terms"
+
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+            >
+              利用規約
+            </Link>
+
+
+            <Link
+              href="/guidelines"
+
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+            >
+              利用上の注意
+            </Link>
+
+
+            <Link
+              href="/privacy"
+
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800"
+            >
+              プライバシーポリシー
+            </Link>
+
+          </div>
+
+        </section>
+
+
+        {/* ====================================================
+            Finish
+        ==================================================== */}
+
+        <section className="mt-10 rounded-2xl border border-emerald-900 bg-emerald-950/20 p-6 text-center sm:p-8">
+
+          <p className="text-lg font-bold text-emerald-300">
+            準備ができたら販売会を作ってみましょう
+          </p>
+
+
+          <p className="mt-3 text-sm text-slate-400">
+            このガイドは後からいつでも確認できます。
+          </p>
+
+
+          <Link
+            href="/"
+
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-500 px-7 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
+          >
+            販売会管理へ進む
+          </Link>
+
+        </section>
+
+
+        {/* ====================================================
             Footer
         ==================================================== */}
 
-        <p className="mt-10 border-t border-slate-800 pt-6 text-xs leading-relaxed text-slate-600">
-          VRC Live MarketはVRChat Inc.とは独立して開発されており、
-          VRChat Inc.の公式サービスではありません。
-        </p>
+        <div className="mt-10 border-t border-slate-800 pt-6">
+
+          <p className="text-center text-xs leading-relaxed text-slate-600">
+            VRC Live MarketはVRChat Inc.とは独立して開発されており、
+            VRChat Inc.の公式サービスではありません。
+          </p>
+
+        </div>
 
       </div>
 

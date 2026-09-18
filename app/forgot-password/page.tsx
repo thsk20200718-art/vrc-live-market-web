@@ -1,33 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
+import {
+  useState,
+} from "react";
 
 import {
   createClient,
 } from "@/lib/supabase/client";
 
+import {
+  getAuthErrorMessage,
+} from "@/lib/auth-errors";
+
+
+// ============================================================
+// ページ
+// ============================================================
 
 export default function ForgotPasswordPage() {
   const [
     email,
     setEmail,
-  ] = useState("");
+  ] =
+    useState("");
+
 
   const [
     loading,
     setLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
+
 
   const [
     message,
     setMessage,
-  ] = useState("");
+  ] =
+    useState("");
+
 
   const [
     success,
     setSuccess,
-  ] = useState(false);
+  ] =
+    useState(false);
 
 
   // ==========================================================
@@ -36,9 +54,29 @@ export default function ForgotPasswordPage() {
 
   async function handleSendResetEmail() {
     if (
-      loading ||
-      !email
+      loading
     ) {
+      return;
+    }
+
+
+    const normalizedEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+
+    if (
+      !normalizedEmail
+    ) {
+      setSuccess(
+        false
+      );
+
+      setMessage(
+        "メールアドレスを入力してください。"
+      );
+
       return;
     }
 
@@ -68,12 +106,14 @@ export default function ForgotPasswordPage() {
       const {
         error,
       } =
-        await supabase.auth.resetPasswordForEmail(
-          email,
-          {
-            redirectTo,
-          }
-        );
+        await supabase
+          .auth
+          .resetPasswordForEmail(
+            normalizedEmail,
+            {
+              redirectTo,
+            }
+          );
 
 
       if (
@@ -86,6 +126,7 @@ export default function ForgotPasswordPage() {
       setSuccess(
         true
       );
+
 
       setMessage(
         "パスワード再設定用のメールを送信しました。メールをご確認ください。"
@@ -100,8 +141,15 @@ export default function ForgotPasswordPage() {
       );
 
 
+      setSuccess(
+        false
+      );
+
+
       setMessage(
-        "再設定メールの送信に失敗しました。メールアドレスをご確認ください。"
+        getAuthErrorMessage(
+          error
+        )
       );
 
     } finally {
@@ -113,20 +161,33 @@ export default function ForgotPasswordPage() {
 
 
   // ==========================================================
+  // Enter
+  // ==========================================================
+
+  function handleKeyDown(
+    event:
+      React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (
+      event.key ===
+      "Enter"
+    ) {
+      handleSendResetEmail();
+    }
+  }
+
+
+  // ==========================================================
   // UI
   // ==========================================================
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
-      <div className="mx-auto flex min-h-screen max-w-md items-center px-6 py-10">
+      <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-8 sm:px-6 sm:py-10">
 
         <div className="w-full rounded-2xl border border-slate-800 bg-slate-900 p-6 sm:p-8">
 
-
-          {/* ==================================================
-              Header
-          ================================================== */}
 
           <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
             VRC LIVE MARKET
@@ -144,14 +205,8 @@ export default function ForgotPasswordPage() {
           </p>
 
 
-          {/* ==================================================
-              Form
-          ================================================== */}
-
           <div className="mt-8 space-y-5">
 
-
-            {/* Email */}
 
             <div>
 
@@ -167,10 +222,14 @@ export default function ForgotPasswordPage() {
                   email
                 }
 
-                onChange={(e) =>
+                onChange={(event) =>
                   setEmail(
-                    e.target.value
+                    event.target.value
                   )
+                }
+
+                onKeyDown={
+                  handleKeyDown
                 }
 
                 autoComplete="email"
@@ -187,14 +246,14 @@ export default function ForgotPasswordPage() {
             </div>
 
 
-            {/* Message */}
-
             {message && (
 
               <div
                 className={
                   success
+
                     ? "rounded-xl border border-emerald-900 bg-emerald-950/30 p-4 text-sm leading-relaxed text-emerald-300"
+
                     : "rounded-xl border border-red-900 bg-red-950/30 p-4 text-sm leading-relaxed text-red-300"
                 }
               >
@@ -203,8 +262,6 @@ export default function ForgotPasswordPage() {
 
             )}
 
-
-            {/* Send */}
 
             <button
               type="button"
@@ -215,7 +272,7 @@ export default function ForgotPasswordPage() {
 
               disabled={
                 loading ||
-                !email
+                !email.trim()
               }
 
               className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
@@ -228,8 +285,6 @@ export default function ForgotPasswordPage() {
             </button>
 
 
-            {/* Back */}
-
             <Link
               href="/login"
 
@@ -241,28 +296,42 @@ export default function ForgotPasswordPage() {
           </div>
 
 
-          {/* ==================================================
-              注意
-          ================================================== */}
-
-          <div className="mt-8 rounded-xl bg-slate-950 p-4">
+          <div className="mt-8 rounded-xl border border-slate-800 bg-slate-950 p-4">
 
             <p className="text-xs leading-relaxed text-slate-500">
               メールが届かない場合は、迷惑メールフォルダをご確認ください。
-              また、登録時とは異なるメールアドレスを入力していないかご確認ください。
+              メール送信が混み合っている場合は、
+              少し時間をおいてから再度お試しください。
             </p>
 
           </div>
 
 
-          {/* ==================================================
-              Footer
-          ================================================== */}
-
           <div className="mt-8 border-t border-slate-800 pt-5">
 
-            <p className="text-center text-xs leading-relaxed text-slate-500">
-              VRC Live MarketはVRChat Inc.の公式サービスではありません。
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
+
+              <Link
+                href="/terms"
+                className="text-slate-500 transition hover:text-slate-300"
+              >
+                利用規約
+              </Link>
+
+
+              <Link
+                href="/privacy"
+                className="text-slate-500 transition hover:text-slate-300"
+              >
+                プライバシーポリシー
+              </Link>
+
+            </div>
+
+
+            <p className="mt-5 text-center text-xs leading-relaxed text-slate-600">
+              VRC Live MarketはVRChat Inc.とは独立して開発されており、
+              VRChat Inc.の公式サービスではありません。
             </p>
 
           </div>

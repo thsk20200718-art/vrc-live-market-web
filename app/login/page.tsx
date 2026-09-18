@@ -1,12 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+
+import {
+  useState,
+} from "react";
+
+import {
+  useRouter,
+} from "next/navigation";
 
 import {
   createClient,
 } from "@/lib/supabase/client";
+
+import {
+  getAuthErrorMessage,
+} from "@/lib/auth-errors";
 
 
 // ============================================================
@@ -36,7 +46,6 @@ function EyeIcon() {
       aria-hidden="true"
     >
       <path d="M2.062 12.348a1 1 0 0 1 0-.696C3.58 7.6 7.46 5 12 5s8.42 2.6 9.938 6.652a1 1 0 0 1 0 .696C20.42 16.4 16.54 19 12 19s-8.42-2.6-9.938-6.652Z" />
-
       <circle
         cx="12"
         cy="12"
@@ -197,8 +206,14 @@ export default function LoginPage() {
     }
 
 
+    const normalizedEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+
     if (
-      !email ||
+      !normalizedEmail ||
       !password
     ) {
       setSuccess(
@@ -238,9 +253,7 @@ export default function LoginPage() {
           .auth
           .signInWithPassword({
             email:
-              email
-                .trim()
-                .toLowerCase(),
+              normalizedEmail,
 
             password,
           });
@@ -253,7 +266,7 @@ export default function LoginPage() {
       }
 
 
-      router.push(
+      router.replace(
         "/"
       );
 
@@ -268,8 +281,15 @@ export default function LoginPage() {
       );
 
 
+      setSuccess(
+        false
+      );
+
+
       setMessage(
-        "メールアドレスまたはパスワードを確認してください。"
+        getAuthErrorMessage(
+          error
+        )
       );
 
     } finally {
@@ -292,10 +312,22 @@ export default function LoginPage() {
     }
 
 
+    const normalizedEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+
+    const normalizedInviteCode =
+      inviteCode
+        .trim()
+        .toUpperCase();
+
+
     if (
-      !email ||
+      !normalizedEmail ||
       !password ||
-      !inviteCode
+      !normalizedInviteCode
     ) {
       setSuccess(
         false
@@ -354,16 +386,12 @@ export default function LoginPage() {
             body:
               JSON.stringify({
                 email:
-                  email
-                    .trim()
-                    .toLowerCase(),
+                  normalizedEmail,
 
                 password,
 
                 inviteCode:
-                  inviteCode
-                    .trim()
-                    .toUpperCase(),
+                  normalizedInviteCode,
               }),
           }
         );
@@ -421,12 +449,31 @@ export default function LoginPage() {
       );
 
 
-      setMessage(
-        error instanceof
-          Error
-          ? error.message
-          : "新規登録に失敗しました。"
-      );
+      /*
+       * signup API側ですでに日本語化しているため、
+       * 日本語メッセージはそのまま表示する。
+       *
+       * Supabase等の英語メッセージが来た場合だけ
+       * 共通関数で変換する。
+       */
+
+      if (
+        error instanceof Error &&
+        /[ぁ-んァ-ヶ一-龠]/.test(
+          error.message
+        )
+      ) {
+        setMessage(
+          error.message
+        );
+
+      } else {
+        setMessage(
+          getAuthErrorMessage(
+            error
+          )
+        );
+      }
 
     } finally {
       setLoading(
@@ -457,6 +504,7 @@ export default function LoginPage() {
       "login"
     ) {
       signIn();
+
     } else {
       signUp();
     }
@@ -526,9 +574,7 @@ export default function LoginPage() {
               className={
                 mode ===
                 "login"
-
                   ? "rounded-lg bg-slate-800 px-4 py-3 text-sm font-semibold text-white"
-
                   : "rounded-lg px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-300"
               }
             >
@@ -552,9 +598,7 @@ export default function LoginPage() {
               className={
                 mode ===
                 "signup"
-
                   ? "rounded-lg bg-slate-800 px-4 py-3 text-sm font-semibold text-white"
-
                   : "rounded-lg px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-300"
               }
             >
@@ -593,9 +637,9 @@ export default function LoginPage() {
                   email
                 }
 
-                onChange={(e) =>
+                onChange={(event) =>
                   setEmail(
-                    e.target.value
+                    event.target.value
                   )
                 }
 
@@ -635,9 +679,9 @@ export default function LoginPage() {
                     password
                   }
 
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setPassword(
-                      e.target.value
+                      event.target.value
                     )
                   }
 
@@ -694,8 +738,6 @@ export default function LoginPage() {
               </div>
 
 
-              {/* パスワード忘れ */}
-
               {mode ===
                 "login" && (
 
@@ -737,9 +779,9 @@ export default function LoginPage() {
                     inviteCode
                   }
 
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setInviteCode(
-                      e.target
+                      event.target
                         .value
                         .toUpperCase()
                     )
@@ -775,9 +817,7 @@ export default function LoginPage() {
               <div
                 className={
                   success
-
                     ? "rounded-xl border border-emerald-900 bg-emerald-950/30 p-4 text-sm leading-relaxed text-emerald-300"
-
                     : "rounded-xl border border-red-900 bg-red-950/30 p-4 text-sm leading-relaxed text-red-300"
                 }
               >
@@ -803,7 +843,7 @@ export default function LoginPage() {
 
                 disabled={
                   loading ||
-                  !email ||
+                  !email.trim() ||
                   !password
                 }
 
@@ -827,9 +867,9 @@ export default function LoginPage() {
 
                 disabled={
                   loading ||
-                  !email ||
+                  !email.trim() ||
                   !password ||
-                  !inviteCode
+                  !inviteCode.trim()
                 }
 
                 className="w-full rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
@@ -877,6 +917,14 @@ export default function LoginPage() {
           <div className="mt-8 border-t border-slate-800 pt-5">
 
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
+
+              <Link
+                href="/support"
+                className="text-slate-500 transition hover:text-slate-300"
+              >
+                サポート
+              </Link>
+
 
               <Link
                 href="/terms"

@@ -25,7 +25,9 @@ function getRequiredEnv(
   const value =
     process.env[name];
 
-  if (!value) {
+  if (
+    !value
+  ) {
     throw new Error(
       `環境変数 ${name} が設定されていません。`
     );
@@ -67,7 +69,8 @@ async function getAdminClient(
           email
             .trim()
             .toLowerCase()
-      );
+      )
+      .filter(Boolean);
 
 
   const authHeader =
@@ -117,16 +120,25 @@ async function getAdminClient(
 
   const {
     data,
+    error,
   } =
     await userClient
       .auth
       .getUser();
 
 
+  if (
+    error ||
+    !data.user
+  ) {
+    return null;
+  }
+
+
   const email =
-    data.user
-      ?.email
-      ?.toLowerCase();
+    data.user.email
+      ?.trim()
+      .toLowerCase();
 
 
   if (
@@ -177,7 +189,9 @@ export async function PATCH(
       );
 
 
-    if (!adminClient) {
+    if (
+      !adminClient
+    ) {
       return NextResponse.json(
         {
           success:
@@ -200,8 +214,30 @@ export async function PATCH(
       await context.params;
 
 
-    const body =
-      await request.json();
+    let body: {
+      isActive?: unknown;
+    };
+
+
+    try {
+      body =
+        await request.json();
+
+    } catch {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "入力内容を確認できませんでした。",
+        },
+        {
+          status:
+            400,
+        }
+      );
+    }
 
 
     if (
@@ -245,14 +281,35 @@ export async function PATCH(
           id
         )
         .select(
-          "id, code, label, is_active, max_uses, use_count, expires_at, created_at"
+          "id, code, label, is_active, max_uses, use_count, expires_at, created_at, updated_at"
         )
-        .single();
+        .maybeSingle();
 
 
-    if (error) {
+    if (
+      error
+    ) {
       throw new Error(
         error.message
+      );
+    }
+
+
+    if (
+      !data
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "招待コードが見つかりません。",
+        },
+        {
+          status:
+            404,
+        }
       );
     }
 
@@ -265,9 +322,11 @@ export async function PATCH(
         data,
     });
 
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
-      "Invite toggle error:",
+      "Invite update error:",
       error
     );
 
@@ -279,6 +338,237 @@ export async function PATCH(
 
         error:
           "招待コードの更新に失敗しました。",
+      },
+      {
+        status:
+          500,
+      }
+    );
+  }
+}
+
+
+// ============================================================
+// DELETE
+// 未使用の招待コードのみ削除
+// ============================================================
+
+export async function DELETE(
+  request: NextRequest,
+
+  context: {
+    params:
+      Promise<{
+        id: string;
+      }>;
+  }
+) {
+  try {
+    const adminClient =
+      await getAdminClient(
+        request
+      );
+
+
+    if (
+      !adminClient
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "管理者権限がありません。",
+        },
+        {
+          status:
+            403,
+        }
+      );
+    }
+
+
+    const {
+      id,
+    } =
+      await context.params;
+
+
+    // --------------------------------------------------------
+    // 招待コード確認
+    // --------------------------------------------------------
+
+    const {
+      data:
+        invite,
+
+      error:
+        inviteError,
+    } =
+      await adminClient
+        .from(
+          "invite_codes"
+        )
+        .select(
+          "id, code, use_count"
+        )
+        .eq(
+          "id",
+          id
+        )
+        .maybeSingle();
+
+
+    if (
+      inviteError
+    ) {
+      throw new Error(
+        inviteError.message
+      );
+    }
+
+
+    if (
+      !invite
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "招待コードが見つかりません。",
+        },
+        {
+          status:
+            404,
+        }
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // 使用履歴確認
+    // --------------------------------------------------------
+
+    const {
+      count:
+        usageCount,
+
+      error:
+        usageCountError,
+    } =
+      await adminClient
+        .from(
+          "invite_code_uses"
+        )
+        .select(
+          "*",
+          {
+            count:
+              "exact",
+
+            head:
+              true,
+          }
+        )
+        .eq(
+          "invite_code_id",
+          id
+        );
+
+
+    if (
+      usageCountError
+    ) {
+      throw new Error(
+        usageCountError.message
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // 使用済みは削除禁止
+    // --------------------------------------------------------
+
+    if (
+      invite.use_count >
+        0 ||
+      (
+        usageCount ??
+        0
+      ) >
+        0
+    ) {
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "使用履歴がある招待コードは削除できません。必要な場合は無効化してください。",
+        },
+        {
+          status:
+            409,
+        }
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // 削除
+    // --------------------------------------------------------
+
+    const {
+      error:
+        deleteError,
+    } =
+      await adminClient
+        .from(
+          "invite_codes"
+        )
+        .delete()
+        .eq(
+          "id",
+          id
+        );
+
+
+    if (
+      deleteError
+    ) {
+      throw new Error(
+        deleteError.message
+      );
+    }
+
+
+    return NextResponse.json({
+      success:
+        true,
+
+      deletedId:
+        id,
+    });
+
+  } catch (
+    error
+  ) {
+    console.error(
+      "Invite delete error:",
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        success:
+          false,
+
+        error:
+          "招待コードの削除に失敗しました。",
       },
       {
         status:

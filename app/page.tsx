@@ -833,6 +833,15 @@ export default function Home() {
               はじめての方へ
             </Link>
 
+
+            <Link
+              href="/support"
+              className="text-slate-400 hover:text-white"
+            >
+              サポート
+            </Link>
+
+
             <Link
               href="/terms"
               className="text-slate-400 hover:text-white"
@@ -840,12 +849,14 @@ export default function Home() {
               利用規約
             </Link>
 
+
             <Link
               href="/privacy"
               className="text-slate-400 hover:text-white"
             >
               プライバシーポリシー
             </Link>
+
 
             <Link
               href="/guidelines"

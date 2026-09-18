@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -98,6 +99,56 @@ function formatDate(
 
 
 // ============================================================
+// 招待コード状態判定
+// ============================================================
+
+function isExpired(
+  invite: Invite
+) {
+  if (
+    !invite.expires_at
+  ) {
+    return false;
+  }
+
+
+  const date =
+    new Date(
+      invite.expires_at
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return true;
+  }
+
+
+  return (
+    date.getTime() <=
+    Date.now()
+  );
+}
+
+
+function isUsableInvite(
+  invite: Invite
+) {
+  return (
+    invite.is_active &&
+    !isExpired(
+      invite
+    ) &&
+    invite.use_count <
+      invite.max_uses
+  );
+}
+
+
+// ============================================================
 // ページ
 // ============================================================
 
@@ -165,6 +216,15 @@ export default function AdminInvitesPage() {
 
 
   const [
+    deletingId,
+    setDeletingId,
+  ] =
+    useState<
+      string | null
+    >(null);
+
+
+  const [
     errorMessage,
     setErrorMessage,
   ] =
@@ -176,6 +236,54 @@ export default function AdminInvitesPage() {
     setSuccessMessage,
   ] =
     useState("");
+
+
+  // ==========================================================
+  // 統計
+  // ==========================================================
+
+  const stats =
+    useMemo(
+      () => {
+
+        const issuedCount =
+          invites.length;
+
+
+        const usableCount =
+          invites.filter(
+            isUsableInvite
+          ).length;
+
+
+        const uniqueUsers =
+          new Set(
+            uses.map(
+              (
+                usage
+              ) =>
+                usage.user_id
+            )
+          );
+
+
+        return {
+          issuedCount,
+
+          usableCount,
+
+          registeredUsers:
+            uniqueUsers.size,
+
+          totalUses:
+            uses.length,
+        };
+      },
+      [
+        invites,
+        uses,
+      ]
+    );
 
 
   // ==========================================================
@@ -224,7 +332,7 @@ export default function AdminInvitesPage() {
 
 
   // ==========================================================
-  // 招待コード一覧取得
+  // 一覧取得
   // ==========================================================
 
   async function loadInvites() {
@@ -327,16 +435,14 @@ export default function AdminInvitesPage() {
       !Number.isFinite(
         maxUses
       ) ||
-      maxUses < 1 ||
-      maxUses > 100
+      maxUses <
+        1 ||
+      maxUses >
+        100
     ) {
       return "利用上限は1〜100回で設定してください。";
     }
 
-
-    // --------------------------------------------------------
-    // 有効期限なし
-    // --------------------------------------------------------
 
     if (
       !expiresAt
@@ -344,10 +450,6 @@ export default function AdminInvitesPage() {
       return null;
     }
 
-
-    // --------------------------------------------------------
-    // 日付変換
-    // --------------------------------------------------------
 
     const expirationDate =
       new Date(
@@ -364,10 +466,6 @@ export default function AdminInvitesPage() {
     }
 
 
-    // --------------------------------------------------------
-    // 過去日時
-    // --------------------------------------------------------
-
     if (
       expirationDate.getTime() <=
       Date.now()
@@ -375,10 +473,6 @@ export default function AdminInvitesPage() {
       return "有効期限は現在より後の日時を指定してください。";
     }
 
-
-    // --------------------------------------------------------
-    // 2035年より後
-    // --------------------------------------------------------
 
     const maxDate =
       new Date(
@@ -452,26 +546,10 @@ export default function AdminInvitesPage() {
       if (
         expiresAt
       ) {
-        const expirationDate =
+        expiresAtIso =
           new Date(
             expiresAt
-          );
-
-
-        if (
-          Number.isNaN(
-            expirationDate.getTime()
-          )
-        ) {
-          throw new Error(
-            "有効期限が正しくありません。"
-          );
-        }
-
-
-        expiresAtIso =
-          expirationDate
-            .toISOString();
+          ).toISOString();
       }
 
 
@@ -531,11 +609,9 @@ export default function AdminInvitesPage() {
         ""
       );
 
-
       setMaxUses(
         1
       );
-
 
       setExpiresAt(
         ""
@@ -576,7 +652,8 @@ export default function AdminInvitesPage() {
     invite: Invite
   ) {
     if (
-      updatingId
+      updatingId ||
+      deletingId
     ) {
       return;
     }
@@ -673,6 +750,125 @@ export default function AdminInvitesPage() {
 
 
   // ==========================================================
+  // 削除
+  // ==========================================================
+
+  async function deleteInvite(
+    invite: Invite
+  ) {
+    if (
+      deletingId ||
+      updatingId
+    ) {
+      return;
+    }
+
+
+    if (
+      invite.use_count >
+      0
+    ) {
+      setErrorMessage(
+        "使用済みの招待コードは削除できません。無効化してください。"
+      );
+
+      return;
+    }
+
+
+    const confirmed =
+      window.confirm(
+        `招待コード「${invite.code}」を削除しますか？\n\nこの操作は元に戻せません。`
+      );
+
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+
+    setDeletingId(
+      invite.id
+    );
+
+    setErrorMessage(
+      ""
+    );
+
+    setSuccessMessage(
+      ""
+    );
+
+
+    try {
+      const accessToken =
+        await getAccessToken();
+
+
+      const response =
+        await fetch(
+          `/api/admin/invites/${invite.id}`,
+          {
+            method:
+              "DELETE",
+
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.error ||
+          "招待コードを削除できませんでした。"
+        );
+      }
+
+
+      setSuccessMessage(
+        "招待コードを削除しました。"
+      );
+
+
+      await loadInvites();
+
+    } catch (
+      error
+    ) {
+      console.error(
+        "Invite delete error:",
+        error
+      );
+
+
+      setErrorMessage(
+        error instanceof
+          Error
+          ? error.message
+          : "招待コードの削除に失敗しました。"
+      );
+
+    } finally {
+      setDeletingId(
+        null
+      );
+    }
+  }
+
+
+  // ==========================================================
   // コピー
   // ==========================================================
 
@@ -709,24 +905,22 @@ export default function AdminInvitesPage() {
 
 
   // ==========================================================
-  // 招待コード名取得
+  // 招待コード名
   // ==========================================================
 
   function getInviteCodeById(
     inviteId: string
   ) {
-    const invite =
+    return (
       invites.find(
         (
-          item
+          invite
         ) =>
-          item.id ===
+          invite.id ===
           inviteId
-      );
-
-
-    return invite?.code ??
-      "不明";
+      )?.code ??
+      "不明"
+    );
   }
 
 
@@ -740,9 +934,7 @@ export default function AdminInvitesPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
 
 
-        {/* ====================================================
-            Header
-        ==================================================== */}
+        {/* Header */}
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
@@ -759,7 +951,7 @@ export default function AdminInvitesPage() {
 
 
             <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              販売者向けの招待コードを発行・管理します。
+              招待コードとClosed Beta参加者を管理します。
             </p>
 
           </div>
@@ -776,9 +968,7 @@ export default function AdminInvitesPage() {
         </div>
 
 
-        {/* ====================================================
-            Message
-        ==================================================== */}
+        {/* Messages */}
 
         {errorMessage && (
 
@@ -798,9 +988,65 @@ export default function AdminInvitesPage() {
         )}
 
 
-        {/* ====================================================
-            新規発行
-        ==================================================== */}
+        {/* 統計 */}
+
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+
+            <p className="text-sm text-slate-500">
+              発行コード
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {stats.issuedCount}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-2xl border border-emerald-900/60 bg-emerald-950/20 p-5">
+
+            <p className="text-sm text-emerald-400">
+              現在利用可能
+            </p>
+
+            <p className="mt-2 text-3xl font-bold text-emerald-300">
+              {stats.usableCount}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+
+            <p className="text-sm text-slate-500">
+              登録ユーザー
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {stats.registeredUsers}
+            </p>
+
+          </div>
+
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+
+            <p className="text-sm text-slate-500">
+              累計使用回数
+            </p>
+
+            <p className="mt-2 text-3xl font-bold">
+              {stats.totalUses}
+            </p>
+
+          </div>
+
+        </section>
+
+
+        {/* 新規発行 */}
 
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
 
@@ -809,15 +1055,7 @@ export default function AdminInvitesPage() {
           </h2>
 
 
-          <p className="mt-2 text-sm text-slate-400">
-            Closed Betaへ招待する販売者ごとにコードを作成できます。
-          </p>
-
-
           <div className="mt-6 grid gap-5 md:grid-cols-3">
-
-
-            {/* Label */}
 
             <div>
 
@@ -825,43 +1063,26 @@ export default function AdminInvitesPage() {
                 ラベル
               </label>
 
-
               <input
                 type="text"
+                value={label}
+                maxLength={100}
 
-                value={
-                  label
-                }
-
-                maxLength={
-                  100
-                }
-
-                onChange={(e) =>
+                onChange={(event) =>
                   setLabel(
-                    e.target.value
+                    event.target.value
                   )
                 }
 
                 placeholder="例：○○ショップ"
 
-                disabled={
-                  creating
-                }
+                disabled={creating}
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition placeholder:text-slate-600 focus:border-emerald-500 disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-emerald-500 disabled:opacity-50"
               />
-
-
-              <p className="mt-2 text-xs text-slate-500">
-                {label.length}
-                {" / 100"}
-              </p>
 
             </div>
 
-
-            {/* Max Uses */}
 
             <div>
 
@@ -869,41 +1090,27 @@ export default function AdminInvitesPage() {
                 利用上限
               </label>
 
-
               <input
                 type="number"
-
                 min="1"
                 max="100"
+                value={maxUses}
 
-                value={
-                  maxUses
-                }
-
-                onChange={(e) =>
+                onChange={(event) =>
                   setMaxUses(
                     Number(
-                      e.target.value
+                      event.target.value
                     )
                   )
                 }
 
-                disabled={
-                  creating
-                }
+                disabled={creating}
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-emerald-500 disabled:opacity-50"
               />
-
-
-              <p className="mt-2 text-xs text-slate-500">
-                1〜100回まで設定できます。
-              </p>
 
             </div>
 
-
-            {/* Expires */}
 
             <div>
 
@@ -911,34 +1118,24 @@ export default function AdminInvitesPage() {
                 有効期限
               </label>
 
-
               <input
                 type="datetime-local"
+                value={expiresAt}
+                max={MAX_EXPIRATION_LOCAL}
 
-                value={
-                  expiresAt
-                }
-
-                max={
-                  MAX_EXPIRATION_LOCAL
-                }
-
-                onChange={(e) =>
+                onChange={(event) =>
                   setExpiresAt(
-                    e.target.value
+                    event.target.value
                   )
                 }
 
-                disabled={
-                  creating
-                }
+                disabled={creating}
 
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none transition focus:border-emerald-500 disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-emerald-500 disabled:opacity-50"
               />
 
-
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                空欄なら期限なし。最大2035年12月31日まで設定できます。
+              <p className="mt-2 text-xs text-slate-500">
+                空欄なら期限なし
               </p>
 
             </div>
@@ -948,34 +1145,24 @@ export default function AdminInvitesPage() {
 
           <button
             type="button"
+            onClick={createInvite}
+            disabled={creating}
 
-            onClick={
-              createInvite
-            }
-
-            disabled={
-              creating
-            }
-
-            className="mt-6 w-full rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="mt-6 rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
           >
-
             {creating
               ? "発行中..."
               : "＋ 招待コードを発行"}
-
           </button>
 
         </section>
 
 
-        {/* ====================================================
-            招待コード一覧
-        ==================================================== */}
+        {/* 招待コード */}
 
-        <section className="mt-8">
+        <section className="mt-10">
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between">
 
             <h2 className="text-xl font-bold">
               招待コード一覧
@@ -984,16 +1171,10 @@ export default function AdminInvitesPage() {
 
             <button
               type="button"
+              onClick={loadInvites}
+              disabled={loading}
 
-              onClick={
-                loadInvites
-              }
-
-              disabled={
-                loading
-              }
-
-              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800 disabled:opacity-50"
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
             >
               更新
             </button>
@@ -1003,12 +1184,11 @@ export default function AdminInvitesPage() {
 
           {loading ? (
 
-            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-400">
+            <p className="mt-5 text-slate-400">
               読み込んでいます...
-            </div>
+            </p>
 
-          ) : invites.length ===
-            0 ? (
+          ) : invites.length === 0 ? (
 
             <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-400">
               招待コードはまだありません。
@@ -1023,43 +1203,45 @@ export default function AdminInvitesPage() {
                   invite
                 ) => {
 
+                  const expired =
+                    isExpired(
+                      invite
+                    );
+
                   const usedUp =
                     invite.use_count >=
                     invite.max_uses;
 
+                  const usable =
+                    isUsableInvite(
+                      invite
+                    );
 
-                  const expired =
-                    invite.expires_at
-                      ? (
-                          !Number.isNaN(
-                            new Date(
-                              invite.expires_at
-                            ).getTime()
-                          ) &&
-                          new Date(
-                            invite.expires_at
-                          ).getTime() <
-                          Date.now()
-                        )
-                      : false;
+                  const percentage =
+                    Math.min(
+                      100,
+                      Math.round(
+                        (
+                          invite.use_count /
+                          invite.max_uses
+                        ) *
+                          100
+                      )
+                    );
 
 
                   return (
 
-                    <div
-                      key={
-                        invite.id
-                      }
+                    <article
+                      key={invite.id}
 
                       className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6"
                     >
 
-                      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
 
-                        {/* Info */}
-
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
 
                           <div className="flex flex-wrap items-center gap-3">
 
@@ -1068,31 +1250,21 @@ export default function AdminInvitesPage() {
                             </p>
 
 
-                            {!invite.is_active ? (
-
-                              <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-300">
-                                無効
-                              </span>
-
-                            ) : expired ? (
-
-                              <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
-                                期限切れ
-                              </span>
-
-                            ) : usedUp ? (
-
-                              <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-300">
-                                使用上限
-                              </span>
-
-                            ) : (
-
-                              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
-                                有効
-                              </span>
-
-                            )}
+                            <span
+                              className={
+                                usable
+                                  ? "rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300"
+                                  : "rounded-full bg-slate-700 px-3 py-1 text-xs font-semibold text-slate-300"
+                              }
+                            >
+                              {!invite.is_active
+                                ? "無効"
+                                : expired
+                                  ? "期限切れ"
+                                  : usedUp
+                                    ? "使用上限"
+                                    : "有効"}
+                            </span>
 
                           </div>
 
@@ -1103,15 +1275,43 @@ export default function AdminInvitesPage() {
                           </p>
 
 
-                          <div className="mt-3 space-y-1 text-sm text-slate-500">
+                          <div className="mt-4 max-w-md">
 
-                            <p>
-                              使用：
-                              {invite.use_count}
-                              {" / "}
-                              {invite.max_uses}
-                            </p>
+                            <div className="flex justify-between text-xs text-slate-500">
 
+                              <span>
+                                使用状況
+                              </span>
+
+                              <span>
+                                {invite.use_count}
+                                {" / "}
+                                {invite.max_uses}
+                                {" ("}
+                                {percentage}
+                                {"%)"}
+                              </span>
+
+                            </div>
+
+
+                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+
+                              <div
+                                className="h-full rounded-full bg-emerald-500 transition-all"
+
+                                style={{
+                                  width:
+                                    `${percentage}%`,
+                                }}
+                              />
+
+                            </div>
+
+                          </div>
+
+
+                          <div className="mt-4 space-y-1 text-sm text-slate-500">
 
                             <p>
                               有効期限：
@@ -1119,7 +1319,6 @@ export default function AdminInvitesPage() {
                                 invite.expires_at
                               )}
                             </p>
-
 
                             <p>
                               発行：
@@ -1133,8 +1332,6 @@ export default function AdminInvitesPage() {
                         </div>
 
 
-                        {/* Buttons */}
-
                         <div className="flex flex-col gap-3 sm:flex-row">
 
                           <button
@@ -1146,7 +1343,7 @@ export default function AdminInvitesPage() {
                               )
                             }
 
-                            className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                            className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold hover:bg-slate-800"
                           >
                             コピー
                           </button>
@@ -1163,30 +1360,64 @@ export default function AdminInvitesPage() {
 
                             disabled={
                               updatingId ===
-                              invite.id
+                                invite.id ||
+                              deletingId ===
+                                invite.id
                             }
 
                             className={
                               invite.is_active
-                                ? "rounded-xl border border-red-900 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-950/30 disabled:opacity-50"
-                                : "rounded-xl border border-emerald-900 px-5 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-950/30 disabled:opacity-50"
+                                ? "rounded-xl border border-amber-900 px-5 py-3 text-sm font-semibold text-amber-300 hover:bg-amber-950/30 disabled:opacity-50"
+                                : "rounded-xl border border-emerald-900 px-5 py-3 text-sm font-semibold text-emerald-300 hover:bg-emerald-950/30 disabled:opacity-50"
                             }
                           >
-
                             {updatingId ===
                             invite.id
                               ? "変更中..."
                               : invite.is_active
                                 ? "無効化"
                                 : "有効化"}
+                          </button>
 
+
+                          <button
+                            type="button"
+
+                            onClick={() =>
+                              deleteInvite(
+                                invite
+                              )
+                            }
+
+                            disabled={
+                              invite.use_count >
+                                0 ||
+                              deletingId ===
+                                invite.id ||
+                              updatingId ===
+                                invite.id
+                            }
+
+                            title={
+                              invite.use_count >
+                              0
+                                ? "使用履歴があるため削除できません"
+                                : "招待コードを削除"
+                            }
+
+                            className="rounded-xl border border-red-900 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            {deletingId ===
+                            invite.id
+                              ? "削除中..."
+                              : "削除"}
                           </button>
 
                         </div>
 
                       </div>
 
-                    </div>
+                    </article>
 
                   );
                 }
@@ -1199,28 +1430,25 @@ export default function AdminInvitesPage() {
         </section>
 
 
-        {/* ====================================================
-            使用履歴
-        ==================================================== */}
+        {/* 使用ユーザー */}
 
-        <section className="mt-10">
+        <section className="mt-12">
 
           <h2 className="text-xl font-bold">
-            使用履歴
+            Closed Beta 登録ユーザー
           </h2>
 
 
-          {loading ? (
+          <p className="mt-2 text-sm text-slate-400">
+            招待コードを利用して登録したユーザーです。
+          </p>
+
+
+          {uses.length ===
+          0 ? (
 
             <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-400">
-              読み込んでいます...
-            </div>
-
-          ) : uses.length ===
-            0 ? (
-
-            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-400">
-              まだ招待コードの使用履歴はありません。
+              登録ユーザーはまだいません。
             </div>
 
           ) : (
@@ -1229,7 +1457,7 @@ export default function AdminInvitesPage() {
 
               <div className="overflow-x-auto">
 
-                <table className="w-full min-w-[700px] text-left text-sm">
+                <table className="w-full min-w-[750px] text-left text-sm">
 
                   <thead className="border-b border-slate-800 bg-slate-950 text-slate-400">
 
@@ -1244,7 +1472,7 @@ export default function AdminInvitesPage() {
                       </th>
 
                       <th className="px-5 py-4 font-medium">
-                        使用日時
+                        登録日時
                       </th>
 
                     </tr>
@@ -1260,9 +1488,7 @@ export default function AdminInvitesPage() {
                       ) => (
 
                       <tr
-                        key={
-                          usage.id
-                        }
+                        key={usage.id}
 
                         className="border-b border-slate-800 last:border-b-0"
                       >
@@ -1304,14 +1530,11 @@ export default function AdminInvitesPage() {
         </section>
 
 
-        {/* ====================================================
-            Footer
-        ==================================================== */}
-
         <div className="mt-12 border-t border-slate-800 pt-6">
 
           <p className="text-xs leading-relaxed text-slate-600">
-            このページはVRC Live Market管理者専用です。
+            使用済みの招待コードは履歴保護のため削除できません。
+            不要になった場合は無効化してください。
           </p>
 
         </div>

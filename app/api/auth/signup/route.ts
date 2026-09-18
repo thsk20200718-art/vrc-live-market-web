@@ -7,6 +7,10 @@ import {
   createClient,
 } from "@supabase/supabase-js";
 
+import {
+  getAuthErrorMessage,
+} from "@/lib/auth-errors";
+
 
 export const runtime =
   "nodejs";
@@ -47,15 +51,10 @@ export async function POST(
   request:
     NextRequest
 ) {
-  let reservedInviteId:
-    string | null =
-    null;
-
-
   try {
 
     // --------------------------------------------------------
-    // リクエスト取得
+    // Request Body
     // --------------------------------------------------------
 
     let body: {
@@ -177,11 +176,6 @@ export async function POST(
       );
 
 
-    // --------------------------------------------------------
-    // Admin Client
-    // 招待コード確認専用
-    // --------------------------------------------------------
-
     const supabaseAdmin =
       createClient(
         supabaseUrl,
@@ -226,8 +220,24 @@ export async function POST(
     if (
       inviteError
     ) {
-      throw new Error(
-        `招待コードを確認できませんでした: ${inviteError.message}`
+      console.error(
+        "Invite code read error:",
+        inviteError
+      );
+
+
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "招待コードを確認できませんでした。時間をおいて、もう一度お試しください。",
+        },
+        {
+          status:
+            500,
+        }
       );
     }
 
@@ -241,7 +251,7 @@ export async function POST(
             false,
 
           error:
-            "招待コードが正しくありません。",
+            "招待コードが正しくありません。入力内容をご確認ください。",
         },
         {
           status:
@@ -252,7 +262,7 @@ export async function POST(
 
 
     // --------------------------------------------------------
-    // 招待コード有効確認
+    // 招待コード状態確認
     // --------------------------------------------------------
 
     if (
@@ -284,7 +294,7 @@ export async function POST(
             false,
 
           error:
-            "この招待コードはすでに使用されています。",
+            "この招待コードはすでに使用上限に達しています。",
         },
         {
           status:
@@ -297,14 +307,17 @@ export async function POST(
     if (
       invite.expires_at
     ) {
-      const expiresAt =
+      const expirationDate =
         new Date(
           invite.expires_at
         );
 
 
       if (
-        expiresAt.getTime() <=
+        Number.isNaN(
+          expirationDate.getTime()
+        ) ||
+        expirationDate.getTime() <=
         Date.now()
       ) {
         return NextResponse.json(
@@ -325,10 +338,7 @@ export async function POST(
 
 
     // --------------------------------------------------------
-    // 招待枠を確保
-    //
-    // use_count が現在値のままの場合だけ更新することで、
-    // 同じコードの同時使用をできるだけ防止する
+    // 招待枠確保
     // --------------------------------------------------------
 
     const {
@@ -376,8 +386,24 @@ export async function POST(
     if (
       reserveError
     ) {
-      throw new Error(
-        `招待コードを確保できませんでした: ${reserveError.message}`
+      console.error(
+        "Invite reserve error:",
+        reserveError
+      );
+
+
+      return NextResponse.json(
+        {
+          success:
+            false,
+
+          error:
+            "招待コードの確認中にエラーが発生しました。もう一度お試しください。",
+        },
+        {
+          status:
+            500,
+        }
       );
     }
 
@@ -401,12 +427,8 @@ export async function POST(
     }
 
 
-    reservedInviteId =
-      invite.id;
-
-
     // --------------------------------------------------------
-    // 通常のSupabase Auth Client
+    // Public Client
     // --------------------------------------------------------
 
     const supabasePublic =
@@ -426,7 +448,7 @@ export async function POST(
 
 
     // --------------------------------------------------------
-    // アカウント作成
+    // Signup
     // --------------------------------------------------------
 
     const siteUrl =
@@ -459,29 +481,39 @@ export async function POST(
     ) {
 
       // ----------------------------------------------
-      // 登録失敗なら招待枠を戻す
+      // 招待枠を戻す
       // ----------------------------------------------
 
-      await supabaseAdmin
-        .from(
-          "invite_codes"
-        )
-        .update({
-          use_count:
-            invite.use_count,
+      const {
+        error:
+          rollbackInviteError,
+      } =
+        await supabaseAdmin
+          .from(
+            "invite_codes"
+          )
+          .update({
+            use_count:
+              invite.use_count,
 
-          updated_at:
-            new Date()
-              .toISOString(),
-        })
-        .eq(
-          "id",
-          invite.id
+            updated_at:
+              new Date()
+                .toISOString(),
+          })
+          .eq(
+            "id",
+            invite.id
+          );
+
+
+      if (
+        rollbackInviteError
+      ) {
+        console.error(
+          "Invite rollback error:",
+          rollbackInviteError
         );
-
-
-      reservedInviteId =
-        null;
+      }
 
 
       return NextResponse.json(
@@ -491,7 +523,9 @@ export async function POST(
 
           error:
             signUpError
-              ? signUpError.message
+              ? getAuthErrorMessage(
+                  signUpError
+                )
               : "アカウントを作成できませんでした。",
         },
         {
@@ -503,7 +537,7 @@ export async function POST(
 
 
     // --------------------------------------------------------
-    // 招待コード使用履歴
+    // 使用履歴保存
     // --------------------------------------------------------
 
     const {
@@ -533,8 +567,7 @@ export async function POST(
 
 
       // ----------------------------------------------
-      // 使用履歴保存失敗時は
-      // 作ったユーザーを削除して招待枠も戻す
+      // 作成ユーザー削除
       // ----------------------------------------------
 
       const {
@@ -559,26 +592,40 @@ export async function POST(
       }
 
 
-      await supabaseAdmin
-        .from(
-          "invite_codes"
-        )
-        .update({
-          use_count:
-            invite.use_count,
+      // ----------------------------------------------
+      // 招待枠を戻す
+      // ----------------------------------------------
 
-          updated_at:
-            new Date()
-              .toISOString(),
-        })
-        .eq(
-          "id",
-          invite.id
+      const {
+        error:
+          rollbackInviteError,
+      } =
+        await supabaseAdmin
+          .from(
+            "invite_codes"
+          )
+          .update({
+            use_count:
+              invite.use_count,
+
+            updated_at:
+              new Date()
+                .toISOString(),
+          })
+          .eq(
+            "id",
+            invite.id
+          );
+
+
+      if (
+        rollbackInviteError
+      ) {
+        console.error(
+          "Invite rollback error:",
+          rollbackInviteError
         );
-
-
-      reservedInviteId =
-        null;
+      }
 
 
       return NextResponse.json(
@@ -587,7 +634,7 @@ export async function POST(
             false,
 
           error:
-            "招待コードの使用記録を保存できませんでした。もう一度お試しください。",
+            "登録処理を完了できませんでした。時間をおいて、もう一度お試しください。",
         },
         {
           status:
@@ -595,10 +642,6 @@ export async function POST(
         }
       );
     }
-
-
-    reservedInviteId =
-      null;
 
 
     // --------------------------------------------------------
@@ -633,7 +676,9 @@ export async function POST(
           false,
 
         error:
-          "新規登録中にエラーが発生しました。",
+          getAuthErrorMessage(
+            error
+          ),
       },
       {
         status:
