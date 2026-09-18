@@ -2320,6 +2320,54 @@ export default function MarketEditPage() {
 
               )}
 
+{/* 販売前に戻す */}
+
+{saleStatus ===
+  "ENDED" && (
+
+  <button
+    type="button"
+
+    onClick={() => {
+      const confirmed =
+        window.confirm(
+          [
+            "販売状態を「販売前」に戻しますか？",
+            "",
+            "VRChat側には",
+            "「まもなく販売開始」",
+            "と表示されます。",
+          ].join(
+            "\n"
+          )
+        );
+
+      if (
+        !confirmed
+      ) {
+        return;
+      }
+
+      handleChangeSaleStatus(
+        "READY"
+      );
+    }}
+
+    disabled={
+      processing ||
+      reorderingProducts
+    }
+
+    className="mt-3 min-h-12 w-full rounded-xl border border-slate-600 bg-slate-800 px-5 py-3 font-bold text-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+
+    {changingSaleStatus
+      ? "変更中..."
+      : "↩ 販売前に戻す"}
+
+  </button>
+
+)}
 
               {/* 販売終了 */}
 
