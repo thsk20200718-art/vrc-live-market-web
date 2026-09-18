@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   useEffect,
   useState,
 } from "react";
+
 import {
   useRouter,
 } from "next/navigation";
@@ -12,6 +14,12 @@ import {
 import {
   createClient,
 } from "@/lib/supabase/client";
+
+import {
+  GUIDELINES_VERSION,
+  PRIVACY_VERSION,
+  TERMS_VERSION,
+} from "@/lib/legal";
 
 
 // ============================================================
@@ -67,6 +75,12 @@ export default function Home() {
       string | null
     >(null);
 
+  const [
+    loggingOut,
+    setLoggingOut,
+  ] =
+    useState(false);
+
 
   // ==========================================================
   // 初回読み込み
@@ -84,9 +98,13 @@ export default function Home() {
   // ==========================================================
 
   async function loadMarkets() {
-    setLoading(true);
+    setLoading(
+      true
+    );
 
-    setErrorMessage("");
+    setErrorMessage(
+      ""
+    );
 
     const supabase =
       createClient();
@@ -121,7 +139,9 @@ export default function Home() {
         "ログイン情報の取得に失敗しました。"
       );
 
-      setLoading(false);
+      setLoading(
+        false
+      );
 
       return;
     }
@@ -132,6 +152,78 @@ export default function Home() {
     ) {
       router.replace(
         "/login"
+      );
+
+      return;
+    }
+
+
+    // --------------------------------------------------------
+    // 利用規約同意確認
+    // --------------------------------------------------------
+
+    const {
+      data:
+        consent,
+
+      error:
+        consentError,
+    } =
+      await supabase
+        .from(
+          "user_consents"
+        )
+        .select(
+          "id"
+        )
+        .eq(
+          "user_id",
+          user.id
+        )
+        .eq(
+          "terms_version",
+          TERMS_VERSION
+        )
+        .eq(
+          "privacy_version",
+          PRIVACY_VERSION
+        )
+        .eq(
+          "guidelines_version",
+          GUIDELINES_VERSION
+        )
+        .maybeSingle();
+
+
+    if (
+      consentError
+    ) {
+      console.error(
+        "Consent check error:",
+        consentError
+      );
+
+      setErrorMessage(
+        "利用規約の同意状況を確認できませんでした。"
+      );
+
+      setLoading(
+        false
+      );
+
+      return;
+    }
+
+
+    // --------------------------------------------------------
+    // 未同意なら規約同意ページへ
+    // --------------------------------------------------------
+
+    if (
+      !consent
+    ) {
+      router.replace(
+        "/agreement"
       );
 
       return;
@@ -181,7 +273,9 @@ export default function Home() {
         "販売会の取得に失敗しました。"
       );
 
-      setLoading(false);
+      setLoading(
+        false
+      );
 
       return;
     }
@@ -262,14 +356,15 @@ export default function Home() {
 
 
   // ==========================================================
-  // 販売会編集画面を開く
+  // 販売会編集画面
   // ==========================================================
 
   function handleOpenMarket(
     marketId: string
   ) {
     if (
-      openingMarketId
+      openingMarketId ||
+      loggingOut
     ) {
       return;
     }
@@ -287,6 +382,84 @@ export default function Home() {
 
 
   // ==========================================================
+  // ログアウト
+  // ==========================================================
+
+  async function handleLogout() {
+    if (
+      loggingOut
+    ) {
+      return;
+    }
+
+
+    const confirmed =
+      window.confirm(
+        "ログアウトしますか？"
+      );
+
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+
+    setLoggingOut(
+      true
+    );
+
+
+    try {
+      const supabase =
+        createClient();
+
+
+      const {
+        error:
+          signOutError,
+      } =
+        await supabase
+          .auth
+          .signOut();
+
+
+      if (
+        signOutError
+      ) {
+        throw signOutError;
+      }
+
+
+      router.replace(
+        "/login"
+      );
+
+      router.refresh();
+
+    } catch (
+      error
+    ) {
+      console.error(
+        "Logout error:",
+        error
+      );
+
+
+      alert(
+        "ログアウトに失敗しました。"
+      );
+
+
+      setLoggingOut(
+        false
+      );
+    }
+  }
+
+
+  // ==========================================================
   // UI
   // ==========================================================
 
@@ -300,7 +473,7 @@ export default function Home() {
             Header
         ==================================================== */}
 
-        <header className="mb-8 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-8 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-start sm:justify-between">
 
 
           <div>
@@ -322,15 +495,59 @@ export default function Home() {
           </div>
 
 
-          {/* 新規作成 */}
+          {/* ==================================================
+              Header操作
+          ================================================== */}
 
-          <Link
-            href="/create"
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
 
-            className="relative z-20 inline-flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition active:scale-[0.98] active:bg-emerald-400 sm:w-auto"
-          >
-            ＋ 新しい販売会を作る
-          </Link>
+
+            {/* はじめての方へ */}
+
+            <Link
+              href="/guide"
+
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-emerald-800 bg-emerald-950/30 px-5 py-3 font-semibold text-emerald-300 transition hover:bg-emerald-950 active:scale-[0.98] sm:w-auto"
+            >
+              ? はじめての方へ
+            </Link>
+
+
+            {/* 新規作成 */}
+
+            <Link
+              href="/create"
+
+              className="relative z-20 inline-flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98] sm:w-auto"
+            >
+              ＋ 新しい販売会を作る
+            </Link>
+
+
+            {/* ログアウト */}
+
+            <button
+              type="button"
+
+              onClick={
+                handleLogout
+              }
+
+              disabled={
+                loggingOut ||
+                loading
+              }
+
+              className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            >
+
+              {loggingOut
+                ? "ログアウト中..."
+                : "ログアウト"}
+
+            </button>
+
+          </div>
 
         </header>
 
@@ -386,6 +603,15 @@ export default function Home() {
               <p className="mt-2 text-sm text-slate-400">
                 「新しい販売会を作る」から最初の販売会を作成できます。
               </p>
+
+
+              <Link
+                href="/guide"
+
+                className="mt-4 inline-block text-sm font-semibold text-emerald-400 transition hover:text-emerald-300"
+              >
+                初めて利用する方はこちら →
+              </Link>
 
             </div>
 
@@ -489,7 +715,8 @@ export default function Home() {
                             }
 
                             disabled={
-                              isOpening
+                              isOpening ||
+                              loggingOut
                             }
 
                             className="pointer-events-auto relative z-20 flex min-h-12 w-full touch-manipulation select-none items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-6 py-3 font-semibold text-white transition active:scale-[0.98] active:bg-slate-700 disabled:cursor-wait disabled:opacity-50 sm:w-auto sm:hover:bg-slate-800"
@@ -536,6 +763,7 @@ export default function Home() {
                 VRC Live Market
               </p>
 
+
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
                 VRChatでのライブ販売を支援する独立プロジェクトです。
               </p>
@@ -546,11 +774,20 @@ export default function Home() {
             <nav className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
 
               <Link
+                href="/guide"
+                className="text-slate-400 transition hover:text-white"
+              >
+                はじめての方へ
+              </Link>
+
+
+              <Link
                 href="/terms"
                 className="text-slate-400 transition hover:text-white"
               >
                 利用規約
               </Link>
+
 
               <Link
                 href="/privacy"
@@ -558,6 +795,7 @@ export default function Home() {
               >
                 プライバシーポリシー
               </Link>
+
 
               <Link
                 href="/guidelines"
