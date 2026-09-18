@@ -263,9 +263,6 @@ export default function Home() {
 
   // ==========================================================
   // 販売会編集画面を開く
-  //
-  // スマホでLinkのタップが反応しないケースを避けるため
-  // 明示的にrouter.pushを使用する。
   // ==========================================================
 
   function handleOpenMarket(
@@ -294,9 +291,9 @@ export default function Home() {
   // ==========================================================
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="flex min-h-screen flex-col bg-slate-950 text-white">
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
 
 
         {/* ====================================================
@@ -478,9 +475,7 @@ export default function Home() {
                         </div>
 
 
-                        {/* ==========================================
-                            編集ボタン
-                        ========================================== */}
+                        {/* 編集 */}
 
                         <div className="relative z-20 w-full shrink-0 sm:w-auto">
 
@@ -523,6 +518,71 @@ export default function Home() {
         </section>
 
       </div>
+
+
+      {/* ======================================================
+          Footer
+      ====================================================== */}
+
+      <footer className="border-t border-slate-800 bg-slate-950">
+
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+
+              <p className="text-sm font-semibold text-slate-300">
+                VRC Live Market
+              </p>
+
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                VRChatでのライブ販売を支援する独立プロジェクトです。
+              </p>
+
+            </div>
+
+
+            <nav className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
+
+              <Link
+                href="/terms"
+                className="text-slate-400 transition hover:text-white"
+              >
+                利用規約
+              </Link>
+
+              <Link
+                href="/privacy"
+                className="text-slate-400 transition hover:text-white"
+              >
+                プライバシーポリシー
+              </Link>
+
+              <Link
+                href="/guidelines"
+                className="text-slate-400 transition hover:text-white"
+              >
+                禁止商品・利用上の注意
+              </Link>
+
+            </nav>
+
+          </div>
+
+
+          <div className="mt-6 border-t border-slate-900 pt-5">
+
+            <p className="text-xs leading-relaxed text-slate-600">
+              VRC Live MarketはVRChat Inc.とは独立して開発されており、
+              VRChat Inc.の公式サービスではありません。
+            </p>
+
+          </div>
+
+        </div>
+
+      </footer>
 
     </main>
   );
