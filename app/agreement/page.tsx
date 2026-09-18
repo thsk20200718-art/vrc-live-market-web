@@ -30,6 +30,7 @@ export default function AgreementPage() {
   const router =
     useRouter();
 
+
   const [
     supabase,
   ] =
@@ -49,11 +50,13 @@ export default function AgreementPage() {
   ] =
     useState(true);
 
+
   const [
     submitting,
     setSubmitting,
   ] =
     useState(false);
+
 
   const [
     termsAccepted,
@@ -61,15 +64,28 @@ export default function AgreementPage() {
   ] =
     useState(false);
 
+
   const [
     privacyAccepted,
     setPrivacyAccepted,
   ] =
     useState(false);
 
+
   const [
     guidelinesAccepted,
     setGuidelinesAccepted,
+  ] =
+    useState(false);
+
+
+  // ==========================================================
+  // 初回ユーザー判定
+  // ==========================================================
+
+  const [
+    isFirstUse,
+    setIsFirstUse,
   ] =
     useState(false);
 
@@ -84,6 +100,10 @@ export default function AgreementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  // ==========================================================
+  // 規約状況確認
+  // ==========================================================
 
   async function checkAgreement() {
     setLoading(
@@ -133,6 +153,65 @@ export default function AgreementPage() {
 
       return;
     }
+
+
+    // --------------------------------------------------------
+    // 過去に一度でも同意したことがあるか確認
+    //
+    // ここで履歴が0件なら
+    // 「VRC Live Marketを初めて使うユーザー」と判断する
+    // --------------------------------------------------------
+
+    const {
+      data:
+        previousConsents,
+
+      error:
+        previousConsentError,
+    } =
+      await supabase
+        .from(
+          "user_consents"
+        )
+        .select(
+          "id"
+        )
+        .eq(
+          "user_id",
+          user.id
+        )
+        .limit(
+          1
+        );
+
+
+    if (
+      previousConsentError
+    ) {
+      console.error(
+        "Previous consent check error:",
+        previousConsentError
+      );
+
+      setLoading(
+        false
+      );
+
+      return;
+    }
+
+
+    const hasPreviousConsent =
+      (
+        previousConsents ??
+        []
+      ).length >
+      0;
+
+
+    setIsFirstUse(
+      !hasPreviousConsent
+    );
 
 
     // --------------------------------------------------------
@@ -189,7 +268,7 @@ export default function AgreementPage() {
 
 
     // --------------------------------------------------------
-    // すでに同意済みならダッシュボードへ
+    // 現在の規約にすでに同意済み
     // --------------------------------------------------------
 
     if (
@@ -223,12 +302,20 @@ export default function AgreementPage() {
     }
 
 
+    if (
+      submitting
+    ) {
+      return;
+    }
+
+
     setSubmitting(
       true
     );
 
 
     try {
+
       // ------------------------------------------------------
       // ユーザー取得
       // ------------------------------------------------------
@@ -292,14 +379,17 @@ export default function AgreementPage() {
       if (
         insertError
       ) {
+
         // ----------------------------------------------------
-        // 連打等ですでに同じ同意履歴が存在している場合も
-        // 念のため再確認
+        // 連打等ですでに同じ同意履歴が存在する場合は再確認
         // ----------------------------------------------------
 
         const {
           data:
             existingConsent,
+
+          error:
+            existingConsentError,
         } =
           await supabase
             .from(
@@ -328,6 +418,7 @@ export default function AgreementPage() {
 
 
         if (
+          existingConsentError ||
           !existingConsent
         ) {
           throw insertError;
@@ -336,12 +427,21 @@ export default function AgreementPage() {
 
 
       // ------------------------------------------------------
-      // ダッシュボードへ
+      // 初回ユーザーだけガイドへ
       // ------------------------------------------------------
 
-      router.replace(
-        "/"
-      );
+      if (
+        isFirstUse
+      ) {
+        router.replace(
+          "/guide"
+        );
+      } else {
+        router.replace(
+          "/"
+        );
+      }
+
 
       router.refresh();
 
@@ -352,6 +452,7 @@ export default function AgreementPage() {
         "Agreement save error:",
         error
       );
+
 
       alert(
         "同意情報の保存に失敗しました。もう一度お試しください。"
@@ -426,6 +527,29 @@ export default function AgreementPage() {
           </p>
 
         </header>
+
+
+        {/* ====================================================
+            初回案内
+        ==================================================== */}
+
+        {isFirstUse && (
+
+          <div className="mt-8 rounded-xl border border-emerald-900 bg-emerald-950/20 p-4">
+
+            <p className="text-sm font-semibold text-emerald-300">
+              はじめてご利用の方へ
+            </p>
+
+
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              規約への同意後、
+              VRC Live Marketの使い方をご案内します。
+            </p>
+
+          </div>
+
+        )}
 
 
         {/* ====================================================
@@ -624,7 +748,9 @@ export default function AgreementPage() {
 
           {submitting
             ? "保存しています..."
-            : "同意して利用を開始"}
+            : isFirstUse
+              ? "同意して使い方を見る"
+              : "同意して利用を続ける"}
 
         </button>
 

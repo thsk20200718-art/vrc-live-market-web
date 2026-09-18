@@ -47,6 +47,7 @@ export default function Home() {
   const router =
     useRouter();
 
+
   const [
     markets,
     setMarkets,
@@ -55,17 +56,20 @@ export default function Home() {
       MarketCardData[]
     >([]);
 
+
   const [
     loading,
     setLoading,
   ] =
     useState(true);
 
+
   const [
     errorMessage,
     setErrorMessage,
   ] =
     useState("");
+
 
   const [
     openingMarketId,
@@ -75,9 +79,17 @@ export default function Home() {
       string | null
     >(null);
 
+
   const [
     loggingOut,
     setLoggingOut,
+  ] =
+    useState(false);
+
+
+  const [
+    isAdmin,
+    setIsAdmin,
   ] =
     useState(false);
 
@@ -87,17 +99,17 @@ export default function Home() {
   // ==========================================================
 
   useEffect(() => {
-    loadMarkets();
+    loadDashboard();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   // ==========================================================
-  // 販売会読み込み
+  // Dashboard読み込み
   // ==========================================================
 
-  async function loadMarkets() {
+  async function loadDashboard() {
     setLoading(
       true
     );
@@ -105,6 +117,7 @@ export default function Home() {
     setErrorMessage(
       ""
     );
+
 
     const supabase =
       createClient();
@@ -215,10 +228,6 @@ export default function Home() {
     }
 
 
-    // --------------------------------------------------------
-    // 未同意なら規約同意ページへ
-    // --------------------------------------------------------
-
     if (
       !consent
     ) {
@@ -227,6 +236,68 @@ export default function Home() {
       );
 
       return;
+    }
+
+
+    // --------------------------------------------------------
+    // 管理者確認
+    // --------------------------------------------------------
+
+    const {
+      data: {
+        session,
+      },
+    } =
+      await supabase
+        .auth
+        .getSession();
+
+
+    if (
+      session
+    ) {
+      try {
+        const response =
+          await fetch(
+            "/api/admin/status",
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${session.access_token}`,
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          response.ok &&
+          result.success
+        ) {
+          setIsAdmin(
+            result.isAdmin ===
+            true
+          );
+        }
+
+      } catch (
+        error
+      ) {
+        console.error(
+          "Admin status check error:",
+          error
+        );
+
+        setIsAdmin(
+          false
+        );
+      }
     }
 
 
@@ -356,7 +427,7 @@ export default function Home() {
 
 
   // ==========================================================
-  // 販売会編集画面
+  // 販売会編集
   // ==========================================================
 
   function handleOpenMarket(
@@ -417,8 +488,7 @@ export default function Home() {
 
 
       const {
-        error:
-          signOutError,
+        error,
       } =
         await supabase
           .auth
@@ -426,9 +496,9 @@ export default function Home() {
 
 
       if (
-        signOutError
+        error
       ) {
-        throw signOutError;
+        throw error;
       }
 
 
@@ -496,13 +566,28 @@ export default function Home() {
 
 
           {/* ==================================================
-              Header操作
+              Header buttons
           ================================================== */}
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
 
 
-            {/* はじめての方へ */}
+            {/* 管理者のみ */}
+
+            {isAdmin && (
+
+              <Link
+                href="/admin/invites"
+
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-amber-700 bg-amber-950/20 px-5 py-3 font-semibold text-amber-300 transition hover:bg-amber-950/40 active:scale-[0.98] sm:w-auto"
+              >
+                Closed Beta 管理
+              </Link>
+
+            )}
+
+
+            {/* Guide */}
 
             <Link
               href="/guide"
@@ -513,18 +598,18 @@ export default function Home() {
             </Link>
 
 
-            {/* 新規作成 */}
+            {/* Create */}
 
             <Link
               href="/create"
 
-              className="relative z-20 inline-flex min-h-12 w-full touch-manipulation items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98] sm:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98] sm:w-auto"
             >
               ＋ 新しい販売会を作る
             </Link>
 
 
-            {/* ログアウト */}
+            {/* Logout */}
 
             <button
               type="button"
@@ -553,7 +638,7 @@ export default function Home() {
 
 
         {/* ====================================================
-            販売会一覧
+            Market List
         ==================================================== */}
 
         <section>
@@ -562,8 +647,6 @@ export default function Home() {
             あなたの販売会
           </h2>
 
-
-          {/* Loading */}
 
           {loading && (
 
@@ -574,8 +657,6 @@ export default function Home() {
           )}
 
 
-          {/* Error */}
-
           {!loading &&
             errorMessage && (
 
@@ -585,8 +666,6 @@ export default function Home() {
 
           )}
 
-
-          {/* 販売会なし */}
 
           {!loading &&
             !errorMessage &&
@@ -618,8 +697,6 @@ export default function Home() {
           )}
 
 
-          {/* 販売会一覧 */}
-
           {!loading &&
             !errorMessage &&
             markets.length >
@@ -649,13 +726,11 @@ export default function Home() {
                         market.id
                       }
 
-                      className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6"
+                      className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6"
                     >
 
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
-
-                        {/* 販売会情報 */}
 
                         <div className="min-w-0 flex-1">
 
@@ -701,34 +776,28 @@ export default function Home() {
                         </div>
 
 
-                        {/* 編集 */}
+                        <button
+                          type="button"
 
-                        <div className="relative z-20 w-full shrink-0 sm:w-auto">
+                          onClick={() =>
+                            handleOpenMarket(
+                              market.id
+                            )
+                          }
 
-                          <button
-                            type="button"
+                          disabled={
+                            isOpening ||
+                            loggingOut
+                          }
 
-                            onClick={() =>
-                              handleOpenMarket(
-                                market.id
-                              )
-                            }
+                          className="flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 sm:w-auto"
+                        >
 
-                            disabled={
-                              isOpening ||
-                              loggingOut
-                            }
+                          {isOpening
+                            ? "開いています..."
+                            : "編集"}
 
-                            className="pointer-events-auto relative z-20 flex min-h-12 w-full touch-manipulation select-none items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-6 py-3 font-semibold text-white transition active:scale-[0.98] active:bg-slate-700 disabled:cursor-wait disabled:opacity-50 sm:w-auto sm:hover:bg-slate-800"
-                          >
-
-                            {isOpening
-                              ? "開いています..."
-                              : "編集"}
-
-                          </button>
-
-                        </div>
+                        </button>
 
                       </div>
 
@@ -751,72 +820,47 @@ export default function Home() {
           Footer
       ====================================================== */}
 
-      <footer className="border-t border-slate-800 bg-slate-950">
+      <footer className="border-t border-slate-800">
 
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
 
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-5 text-sm">
 
-            <div>
+            <Link
+              href="/guide"
+              className="text-slate-400 hover:text-white"
+            >
+              はじめての方へ
+            </Link>
 
-              <p className="text-sm font-semibold text-slate-300">
-                VRC Live Market
-              </p>
+            <Link
+              href="/terms"
+              className="text-slate-400 hover:text-white"
+            >
+              利用規約
+            </Link>
 
+            <Link
+              href="/privacy"
+              className="text-slate-400 hover:text-white"
+            >
+              プライバシーポリシー
+            </Link>
 
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                VRChatでのライブ販売を支援する独立プロジェクトです。
-              </p>
-
-            </div>
-
-
-            <nav className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
-
-              <Link
-                href="/guide"
-                className="text-slate-400 transition hover:text-white"
-              >
-                はじめての方へ
-              </Link>
-
-
-              <Link
-                href="/terms"
-                className="text-slate-400 transition hover:text-white"
-              >
-                利用規約
-              </Link>
-
-
-              <Link
-                href="/privacy"
-                className="text-slate-400 transition hover:text-white"
-              >
-                プライバシーポリシー
-              </Link>
-
-
-              <Link
-                href="/guidelines"
-                className="text-slate-400 transition hover:text-white"
-              >
-                禁止商品・利用上の注意
-              </Link>
-
-            </nav>
+            <Link
+              href="/guidelines"
+              className="text-slate-400 hover:text-white"
+            >
+              禁止商品・利用上の注意
+            </Link>
 
           </div>
 
 
-          <div className="mt-6 border-t border-slate-900 pt-5">
-
-            <p className="text-xs leading-relaxed text-slate-600">
-              VRC Live MarketはVRChat Inc.とは独立して開発されており、
-              VRChat Inc.の公式サービスではありません。
-            </p>
-
-          </div>
+          <p className="mt-6 text-xs leading-relaxed text-slate-600">
+            VRC Live MarketはVRChat Inc.とは独立して開発されており、
+            VRChat Inc.の公式サービスではありません。
+          </p>
 
         </div>
 
