@@ -92,7 +92,7 @@ export default function CreateMarketPage() {
         {/* タイトル */}
         <div className="mb-10">
           <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
           <h1 className="mt-3 text-4xl font-bold">

@@ -159,7 +159,7 @@ export default function AgreementPage() {
     // 過去に一度でも同意したことがあるか確認
     //
     // ここで履歴が0件なら
-    // 「VRC Live Marketを初めて使うユーザー」と判断する
+    // 「UruBoothを初めて使うユーザー」と判断する
     // --------------------------------------------------------
 
     const {
@@ -512,7 +512,7 @@ export default function AgreementPage() {
         <header>
 
           <p className="text-sm font-semibold tracking-[0.2em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
 
@@ -522,7 +522,7 @@ export default function AgreementPage() {
 
 
           <p className="mt-4 leading-relaxed text-slate-400">
-            VRC Live Marketを安全にご利用いただくため、
+            UruBoothを安全にご利用いただくため、
             以下の内容をご確認ください。
           </p>
 
@@ -544,7 +544,7 @@ export default function AgreementPage() {
 
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
               規約への同意後、
-              VRC Live Marketの使い方をご案内します。
+              UruBoothの使い方をご案内します。
             </p>
 
           </div>
@@ -592,7 +592,7 @@ export default function AgreementPage() {
 
 
                 <p className="mt-1 text-sm leading-relaxed text-slate-400">
-                  VRC Live Marketの利用条件、
+                  UruBoothの利用条件、
                   販売者の責任、
                   禁止事項などを定めています。
                 </p>
@@ -776,7 +776,7 @@ export default function AgreementPage() {
 
 
           <p className="mt-1 text-sm leading-relaxed text-slate-400">
-            VRC Live Marketは現在開発中です。
+            UruBoothは現在開発中です。
             正式公開までに機能や利用条件が変更される場合があります。
           </p>
 
@@ -788,7 +788,7 @@ export default function AgreementPage() {
         ==================================================== */}
 
         <p className="mt-8 text-xs leading-relaxed text-slate-600">
-          VRC Live MarketはVRChat Inc.とは独立して開発されており、
+          UruBoothはVRChat Inc.とは独立して開発されており、
           VRChat Inc.の公式サービスではありません。
         </p>
 

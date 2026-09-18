@@ -9,12 +9,12 @@ export default function TermsPage() {
           href="/"
           className="text-sm text-slate-400 transition hover:text-white"
         >
-          ← VRC Live Marketへ戻る
+          ← UruBoothへ戻る
         </Link>
 
         <header className="mt-8">
           <p className="text-sm font-semibold tracking-[0.2em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -35,7 +35,7 @@ export default function TermsPage() {
 
             <p className="mt-4">
               本利用規約（以下「本規約」といいます。）は、
-              VRC Live Market（以下「本サービス」といいます。）の
+              UruBooth（以下「本サービス」といいます。）の
               利用条件を定めるものです。
             </p>
 
@@ -317,7 +317,7 @@ export default function TermsPage() {
             </p>
 
             <p className="mt-2 text-sm text-slate-400">
-              VRC Live Marketは現在開発中のBetaサービスです。
+              UruBoothは現在開発中のBetaサービスです。
               正式公開までに機能および利用条件が変更される場合があります。
             </p>
           </section>
@@ -325,7 +325,7 @@ export default function TermsPage() {
 
           <section className="border-t border-slate-800 pt-8">
             <p className="text-sm text-slate-500">
-              VRC Live Marketは独立して開発されているプロジェクトであり、
+              UruBoothは独立して開発されているプロジェクトであり、
               VRChat Inc.の公式サービスではありません。
             </p>
           </section>

@@ -528,7 +528,7 @@ export default function LoginPage() {
           ================================================== */}
 
           <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
 
@@ -901,7 +901,7 @@ export default function LoginPage() {
 
 
               <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                現在VRC Live Marketは招待制で提供しています。
+                現在UruBoothは招待制で提供しています。
                 招待コードをお持ちでない場合は新規登録できません。
               </p>
 
@@ -953,7 +953,7 @@ export default function LoginPage() {
 
 
             <p className="mt-5 text-center text-xs leading-relaxed text-slate-600">
-              VRC Live MarketはVRChat Inc.とは独立して開発されており、
+              UruBoothはVRChat Inc.とは独立して開発されており、
               VRChat Inc.の公式サービスではありません。
             </p>
 

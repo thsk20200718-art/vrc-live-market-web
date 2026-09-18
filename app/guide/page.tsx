@@ -67,7 +67,7 @@ export default function GuidePage() {
           <div>
 
             <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-              VRC LIVE MARKET
+              UruBooth
             </p>
 
 
@@ -77,7 +77,7 @@ export default function GuidePage() {
 
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400">
-              VRC Live Marketでは、
+              UruBoothでは、
               Web画面で販売会や商品を登録し、
               VRChat上で商品紹介・HOLD・SOLD管理を行えます。
             </p>
@@ -273,7 +273,7 @@ export default function GuidePage() {
           >
 
             <p>
-              VRChatのVRC Live Market対応ワールドへ入り、
+              VRChatのUruBooth対応ワールドへ入り、
               登録した販売会が正しく表示されるか確認します。
             </p>
 
@@ -529,7 +529,7 @@ export default function GuidePage() {
           <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-400">
 
             <p>
-              VRC Live Marketは、
+              UruBoothは、
               商品紹介やライブ販売を支援するシステムです。
             </p>
 
@@ -614,7 +614,7 @@ export default function GuidePage() {
         <div className="mt-10 border-t border-slate-800 pt-6">
 
           <p className="text-center text-xs leading-relaxed text-slate-600">
-            VRC Live MarketはVRChat Inc.とは独立して開発されており、
+            UruBoothはVRChat Inc.とは独立して開発されており、
             VRChat Inc.の公式サービスではありません。
           </p>
 

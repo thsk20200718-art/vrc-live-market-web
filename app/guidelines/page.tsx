@@ -9,12 +9,12 @@ export default function GuidelinesPage() {
           href="/"
           className="text-sm text-slate-400 transition hover:text-white"
         >
-          ← VRC Live Marketへ戻る
+          ← UruBoothへ戻る
         </Link>
 
         <header className="mt-8">
           <p className="text-sm font-semibold tracking-[0.2em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -23,7 +23,7 @@ export default function GuidelinesPage() {
 
           <p className="mt-4 leading-relaxed text-slate-400">
             安全にライブ販売を行うため、
-            VRC Live Marketでは以下の商品および利用方法を禁止しています。
+            UruBoothでは以下の商品および利用方法を禁止しています。
           </p>
         </header>
 
@@ -41,7 +41,7 @@ export default function GuidelinesPage() {
 
             <p className="mt-4 leading-relaxed text-slate-300">
               次の商品・コンテンツについては、
-              VRC Live Marketを利用した販売を行わないでください。
+              UruBoothを利用した販売を行わないでください。
             </p>
 
             <ul className="mt-4 list-disc space-y-3 pl-6 text-slate-300">
@@ -99,7 +99,7 @@ export default function GuidelinesPage() {
               </li>
 
               <li>
-                その他、VRC Live Marketの安全な運営上
+                その他、UruBoothの安全な運営上
                 不適切と判断される商品
               </li>
             </ul>
@@ -315,7 +315,7 @@ export default function GuidelinesPage() {
               商品や販売方法について、
               本サービスで取り扱ってよいか判断できない場合は、
               販売会を開始する前に
-              VRC Live Market運営へ確認してください。
+              UruBooth運営へ確認してください。
             </p>
           </section>
 
@@ -326,7 +326,7 @@ export default function GuidelinesPage() {
 
           <section className="border-t border-slate-800 pt-8">
             <p className="text-sm leading-relaxed text-slate-500">
-              VRC Live Marketは独立して開発されているプロジェクトであり、
+              UruBoothは独立して開発されているプロジェクトであり、
               VRChat Inc.の公式サービスではありません。
             </p>
           </section>

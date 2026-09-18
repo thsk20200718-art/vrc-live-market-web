@@ -190,7 +190,7 @@ export default function ForgotPasswordPage() {
 
 
           <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-            VRC LIVE MARKET
+         UruBooth
           </p>
 
 
@@ -330,7 +330,7 @@ export default function ForgotPasswordPage() {
 
 
             <p className="mt-5 text-center text-xs leading-relaxed text-slate-600">
-              VRC Live MarketはVRChat Inc.とは独立して開発されており、
+              UruBoothはVRChat Inc.とは独立して開発されており、
               VRChat Inc.の公式サービスではありません。
             </p>
 

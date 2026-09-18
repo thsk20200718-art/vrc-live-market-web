@@ -9,12 +9,12 @@ export default function PrivacyPage() {
           href="/"
           className="text-sm text-slate-400 transition hover:text-white"
         >
-          ← VRC Live Marketへ戻る
+          ← UruBoothへ戻る
         </Link>
 
         <header className="mt-8">
           <p className="text-sm font-semibold tracking-[0.2em] text-emerald-400">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             </h2>
 
             <p className="mt-4">
-              VRC Live Marketは、
+              UruBoothは、
               利用者の情報を適切に取り扱い、
               本サービスの提供に必要な範囲で利用します。
             </p>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
             </h2>
 
             <p className="mt-4 font-semibold text-emerald-300">
-              VRC Live Marketでは、
+              UruBoothでは、
               購入者のクレジットカード番号等の決済情報を
               直接取得・保存しません。
             </p>
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
 
           <section className="border-t border-slate-800 pt-8">
             <p className="text-sm text-slate-500">
-              VRC Live Marketは独立して開発されているプロジェクトであり、
+              UruBoothは独立して開発されているプロジェクトであり、
               VRChat Inc.の公式サービスではありません。
             </p>
           </section>

@@ -549,7 +549,7 @@ export default function Home() {
           <div>
 
             <p className="text-xs font-semibold tracking-[0.2em] text-emerald-400 sm:text-sm sm:tracking-[0.25em]">
-              VRC LIVE MARKET
+              UruBooth
             </p>
 
 
@@ -869,7 +869,7 @@ export default function Home() {
 
 
           <p className="mt-6 text-xs leading-relaxed text-slate-600">
-            VRC Live MarketはVRChat Inc.とは独立して開発されており、
+            uruBoothはVRChat Inc.とは独立して開発されており、
             VRChat Inc.の公式サービスではありません。
           </p>
 

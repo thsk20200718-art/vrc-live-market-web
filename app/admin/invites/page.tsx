@@ -941,7 +941,7 @@ export default function AdminInvitesPage() {
           <div>
 
             <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-              VRC LIVE MARKET
+              UruBooth
             </p>
 
 

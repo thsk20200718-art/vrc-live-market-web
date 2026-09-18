@@ -1816,7 +1816,7 @@ export default function MarketEditPage() {
         <div className="mb-8 sm:mb-10">
 
           <p className="text-xs font-semibold tracking-[0.2em] text-emerald-400 sm:text-sm sm:tracking-[0.25em]">
-            VRC LIVE MARKET
+            UruBooth
           </p>
 
 

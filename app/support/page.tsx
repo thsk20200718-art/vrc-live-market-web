@@ -1,32 +1,144 @@
+"use client";
+
 import Link from "next/link";
+
+import {
+  useState,
+} from "react";
+
+
+// ============================================================
+// Environment
+// ============================================================
 
 const SUPPORT_EMAIL =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL ??
   "";
 
+
+// ============================================================
+// ページ
+// ============================================================
+
 export default function SupportPage() {
+  const [
+    copied,
+    setCopied,
+  ] =
+    useState(false);
+
+
+  const [
+    copyError,
+    setCopyError,
+  ] =
+    useState("");
+
+
   const hasSupportEmail =
-    SUPPORT_EMAIL.trim().length >
+    SUPPORT_EMAIL
+      .trim()
+      .length >
     0;
 
-  const mailtoHref =
+
+  // ==========================================================
+  // Gmailリンク
+  // ==========================================================
+
+  const subject =
+    "UruBooth お問い合わせ";
+
+
+  const gmailHref =
     hasSupportEmail
-      ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-          "VRC Live Market お問い合わせ"
+      ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+          SUPPORT_EMAIL
+        )}&su=${encodeURIComponent(
+          subject
         )}`
-      : null;
+      : "";
+
+
+  // ==========================================================
+  // コピー
+  // ==========================================================
+
+  async function copySupportEmail() {
+    if (
+      !hasSupportEmail
+    ) {
+      return;
+    }
+
+
+    setCopied(
+      false
+    );
+
+    setCopyError(
+      ""
+    );
+
+
+    try {
+      await navigator
+        .clipboard
+        .writeText(
+          SUPPORT_EMAIL
+        );
+
+
+      setCopied(
+        true
+      );
+
+
+      window.setTimeout(
+        () => {
+          setCopied(
+            false
+          );
+        },
+        2500
+      );
+
+    } catch (
+      error
+    ) {
+      console.error(
+        "Support email copy error:",
+        error
+      );
+
+
+      setCopyError(
+        "メールアドレスをコピーできませんでした。"
+      );
+    }
+  }
+
+
+  // ==========================================================
+  // UI
+  // ==========================================================
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
 
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
 
+
+        {/* ====================================================
+            Header
+        ==================================================== */}
+
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
           <div>
 
             <p className="text-sm font-semibold tracking-[0.25em] text-emerald-400">
-              VRC LIVE MARKET
+              UruBooth
             </p>
 
 
@@ -36,8 +148,8 @@ export default function SupportPage() {
 
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400">
-              VRC Live Marketの使い方、
-              不具合、Closed Betaについてのお問い合わせはこちらです。
+              UruBoothの使い方、不具合、
+              Closed Betaについてのお問い合わせはこちらです。
             </p>
 
           </div>
@@ -48,11 +160,15 @@ export default function SupportPage() {
 
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
           >
-            販売会管理へ戻る
+            ← 販売会管理へ戻る
           </Link>
 
         </div>
 
+
+        {/* ====================================================
+            FAQ
+        ==================================================== */}
 
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
 
@@ -63,6 +179,7 @@ export default function SupportPage() {
 
           <div className="mt-5 space-y-4 text-sm leading-relaxed text-slate-400">
 
+
             <div className="rounded-xl bg-slate-950 p-4">
 
               <p className="font-semibold text-slate-200">
@@ -71,7 +188,8 @@ export default function SupportPage() {
 
 
               <p className="mt-2">
-                販売会の作成、商品登録、公開、販売開始・終了については、
+                販売会の作成、商品登録、公開、
+                販売開始・終了については
                 はじめての使い方ページをご確認ください。
               </p>
 
@@ -131,6 +249,10 @@ export default function SupportPage() {
         </section>
 
 
+        {/* ====================================================
+            Bug Report
+        ==================================================== */}
+
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
 
           <h2 className="text-xl font-bold">
@@ -175,19 +297,23 @@ export default function SupportPage() {
           <div className="mt-6 rounded-xl border border-amber-900/60 bg-amber-950/20 p-4">
 
             <p className="text-sm font-semibold text-amber-300">
-              送らないでください
+              秘密情報は送らないでください
             </p>
 
 
             <p className="mt-2 text-sm leading-relaxed text-slate-400">
               パスワード、Supabase Secret Key、
-              GitHub Tokenなどの秘密情報は送らないでください。
+              GitHub Token、APIキーなどは送信しないでください。
             </p>
 
           </div>
 
         </section>
 
+
+        {/* ====================================================
+            Contact
+        ==================================================== */}
 
         <section className="mt-8 rounded-2xl border border-emerald-900/60 bg-emerald-950/20 p-5 sm:p-7">
 
@@ -196,29 +322,84 @@ export default function SupportPage() {
           </h2>
 
 
-          {hasSupportEmail &&
-          mailtoHref ? (
+          {hasSupportEmail ? (
 
             <>
 
               <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                以下のボタンからメールでお問い合わせください。
+                Gmailから問い合わせるか、
+                メールアドレスをコピーしてお使いのメールサービスから送信してください。
               </p>
 
 
-              <a
-                href={
-                  mailtoHref
-                }
-
-                className="mt-5 inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400"
-              >
-                メールで問い合わせる
-              </a>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
 
 
-              <p className="mt-4 break-all text-xs text-slate-500">
-                {SUPPORT_EMAIL}
+                {/* Gmail */}
+
+                <a
+                  href={
+                    gmailHref
+                  }
+
+                  target="_blank"
+
+                  rel="noopener noreferrer"
+
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-emerald-500 px-6 py-3 text-center font-semibold text-slate-950 transition hover:bg-emerald-400"
+                >
+                  Gmailで問い合わせる
+                </a>
+
+
+                {/* Copy */}
+
+                <button
+                  type="button"
+
+                  onClick={
+                    copySupportEmail
+                  }
+
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-700 px-6 py-3 font-semibold text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                >
+
+                  {copied
+                    ? "✓ コピーしました"
+                    : "メールアドレスをコピー"}
+
+                </button>
+
+              </div>
+
+
+              <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950 p-4">
+
+                <p className="text-xs text-slate-500">
+                  問い合わせ先
+                </p>
+
+
+                <p className="mt-2 break-all text-sm font-medium text-slate-300">
+                  {SUPPORT_EMAIL}
+                </p>
+
+              </div>
+
+
+              {copyError && (
+
+                <div className="mt-4 rounded-xl border border-red-900 bg-red-950/30 p-4 text-sm text-red-300">
+                  {copyError}
+                </div>
+
+              )}
+
+
+              <p className="mt-5 text-xs leading-relaxed text-slate-500">
+                Gmailを利用していない場合は、
+                「メールアドレスをコピー」から問い合わせ先をコピーし、
+                普段お使いのメールサービスをご利用ください。
               </p>
 
             </>
@@ -241,7 +422,7 @@ export default function SupportPage() {
                   環境変数
                   NEXT_PUBLIC_SUPPORT_EMAIL
                   を設定すると、
-                  このページにメール問い合わせボタンが表示されます。
+                  このページに問い合わせ機能が表示されます。
                 </p>
 
               </div>
@@ -252,6 +433,10 @@ export default function SupportPage() {
 
         </section>
 
+
+        {/* ====================================================
+            Policies
+        ==================================================== */}
 
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-7">
 
@@ -293,10 +478,14 @@ export default function SupportPage() {
         </section>
 
 
+        {/* ====================================================
+            Footer
+        ==================================================== */}
+
         <div className="mt-10 border-t border-slate-800 pt-6">
 
           <p className="text-center text-xs leading-relaxed text-slate-600">
-            VRC Live MarketはVRChat Inc.とは独立して開発されており、
+            UruBoothはVRChat Inc.とは独立して開発されており、
             VRChat Inc.の公式サービスではありません。
           </p>
 
